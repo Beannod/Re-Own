@@ -1,0 +1,69 @@
+############################
+# General
+############################
+.DS_Store
+Thumbs.db
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+*.orig
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+ENV/
+env/
+.coverage
+coverage.xml
+.tox/
+
+# Node / React Native / Expo
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.expo/*
+.expo/
+.expo-shared/
+.expo-web/*
+dist/
+build/
+android/app/build/
+ios/
+
+# VS Code
+.vscode/
+
+# Environment / Secrets
+.env
+.env.*
+*.local
+
+# Uploads & runtime artifacts
+uploads/
+reown_pids.json
+ai_error_log.json
+sql_error_log.json
+
+# Python byte-compiled / optimized / DLL files
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Others
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/**/__pycache__/
+**/__pycache__/

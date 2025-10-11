@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Sign Up - Re-Own</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/landing.css" />
+    <style>
+        body { min-height: 100vh; background: linear-gradient(135deg, #74ABE2, #5563DE); }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; } </style>
+    <link rel="icon" href="assets/favicon.ico" />
+    <meta name="theme-color" content="#5563DE" />
+    <meta name="description" content="Re-Own login and sign up" />
+</head>
+<body>
+    <!-- Shared Header / Nav from landing page -->
+    <nav id="nav" class="navbar navbar-expand-lg navbar-light fixed-top nav-transparent">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="landing.html#home">
+                <i class="fa-solid fa-house-chimney me-2"></i> Re-Own
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link" href="landing.html#home">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="landing.html#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="landing.html#how">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="landing.html#pricing">Pricing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="landing.html#contact">Contact</a></li>
+                    <li class="nav-item ms-lg-3"><a class="btn btn-brand" href="#register" onclick="event.preventDefault(); window.location.hash='#register'">Sign Up</a></li>
+                    <li class="nav-item ms-2"><a class="btn btn-outline-brand" href="#login" onclick="event.preventDefault(); window.location.hash='#login'">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container d-flex align-items-center justify-content-center" style="min-height:100vh;">
+        <div class="auth-card shadow-lg rounded-4 bg-white p-4 p-md-5" style="width:100%; max-width: 480px;">
+            <div class="text-center mb-4">
+                <div class="h3 fw-bold mb-1"><i class="fa-solid fa-house-chimney me-2 text-primary"></i>Re-Own</div>
+                <div class="text-muted">Welcome back — sign in or create your account</div>
+            </div>
+
+                <!-- Footer with Logout -->
+                <footer class="text-center py-3" style="position:fixed; left:0; right:0; bottom:0;">
+                    <div class="container small text-muted">
+                        <button class="btn btn-sm btn-outline-secondary logout-btn" type="button">Log out</button>
+                    </div>
+                </footer>
+
+            <!-- Login Form (default visible) -->
+            <div id="login-panel" class="auth-panel">
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">Email</label>
+                        <input type="email" id="login-email" class="form-control form-control-lg rounded-3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" id="login-password" class="form-control form-control-lg rounded-start-3" required />
+                            <button class="btn btn-outline-secondary toggle-password rounded-end-3" type="button" data-target="#login-password"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3">Login</button>
+                </form>
+                <div class="text-center mt-3 text-muted">
+                    Don’t have an account?
+                    <a href="#register" class="toggle-auth" data-switch="register">Sign Up</a>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="landing.html" class="link-secondary small">Learn more about Re-Own</a>
+                </div>
+            </div>
+
+            <!-- Register Form (hidden initially) -->
+            <div id="register-panel" class="auth-panel d-none">
+                <form id="register-form">
+                    <div class="mb-3">
+                        <label for="register-email" class="form-label">Email</label>
+                        <input type="email" id="register-email" class="form-control form-control-lg rounded-3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-username" class="form-label">Username</label>
+                        <input type="text" id="register-username" class="form-control form-control-lg rounded-3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-fullname" class="form-label">Full Name</label>
+                        <input type="text" id="register-fullname" class="form-control form-control-lg rounded-3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-role" class="form-label">Role</label>
+                        <select id="register-role" class="form-select form-select-lg rounded-3" required>
+                            <option value="owner">Owner</option>
+                            <option value="renter">Renter</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" id="register-password" class="form-control form-control-lg rounded-start-3" required />
+                            <button class="btn btn-outline-secondary toggle-password rounded-end-3" type="button" data-target="#register-password"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100 rounded-3">Create Account</button>
+                </form>
+                <div class="text-center mt-3 text-muted">
+                    Already have an account?
+                    <a href="#login" class="toggle-auth" data-switch="login">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/landing-page.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/debug.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/site.js"></script>
+    <script src="js/auth-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+/* Index page styles extracted from inline CSS */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #74ebd5, #9face6);
+    color: #333;
+}
+.info-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    padding: 40px;
+    color: #fff;
+}
+.info-container h1 {
+    font-size: 3rem;
+    font-weight: bold;
+}
+.info-container ul {
+    margin-top: 20px;
+    padding-left: 20px;
+}
+.info-container ul li {
+    margin-bottom: 10px;
+}
+.auth-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.auth-container .btn {
+    margin: 10px 0;
+    width: 100%;
+}
+.auth-container .btn-primary {
+    background-color: #6c63ff;
+    border: none;
+}
+.auth-container .btn-primary:hover {
+    background-color: #574dcf;
+}
+.auth-container .btn-secondary {
+    background-color: #ff6584;
+    border: none;
+}
+.auth-container .btn-secondary:hover {
+    background-color: #e04a6b;
+}

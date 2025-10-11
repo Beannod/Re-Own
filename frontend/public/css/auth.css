@@ -1,0 +1,13 @@
+/* Auth page (login/register) specific styles */
+.auth-card { animation: fadeIn .25s ease; border: 1px solid rgba(0,0,0,.06); }
+.auth-panel { animation: fadeSwap .2s ease; }
+.toggle-password { border-left: 0; }
+
+@keyframes fadeIn {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSwap {
+	from { opacity: 0; transform: translateY(4px); }
+	to { opacity: 1; transform: translateY(0); }
+}

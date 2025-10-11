@@ -1,0 +1,196 @@
+/* Landing Page Styles */
+:root {
+  --brand: #00bfa5; /* teal/emerald */
+  --brand-contrast: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --bg-alt: #f8fafc;
+}
+
+body { font-family: 'Inter', 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--text); }
+
+/* Make entire cards clickable when wrapped with an anchor */
+.card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.card-link .feature-card,
+.card-link .step-card {
+  transition: transform .15s ease, box-shadow .15s ease;
+  cursor: pointer;
+}
+.card-link:hover .feature-card,
+.card-link:focus .feature-card,
+.card-link:hover .step-card,
+.card-link:focus .step-card {
+  transform: translateY(-3px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.08);
+}
+
+.stretched-link { position: relative; z-index: 1; }
+.card { position: relative; }
+
+.navbar.nav-transparent { background: transparent; transition: background-color .2s ease, box-shadow .2s ease; }
+.navbar.scrolled { background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+.navbar .navbar-brand { color: var(--text); }
+.navbar .nav-link { color: var(--text); }
+.btn-brand { background: var(--brand); color: var(--brand-contrast); border-color: var(--brand); }
+.btn-outline-brand { color: var(--brand); border-color: var(--brand); }
+.btn-outline-brand:hover { background: var(--brand); color: var(--brand-contrast); }
+.text-brand { color: var(--brand); }
+.bg-brand-soft { background: rgba(0,191,165,.1); color: var(--brand); }
+
+.hero { min-height: 90vh; background: linear-gradient(140deg, #0ea5e9 0%, #00bfa5 100%); color: #fff; padding-top: 96px; }
+.hero .hero-visual { background: #0b3b35; border-radius: 12px; overflow: hidden; }
+.hero .screen-bar { height: 40px; background: rgba(255,255,255,.12); }
+.hero .screen-body { padding: 16px; }
+.hero .placeholder-chart { height: 120px; background: linear-gradient(90deg, rgba(255,255,255,.2) 20%, rgba(255,255,255,.1) 20% 40%, rgba(255,255,255,.2) 40% 60%, rgba(255,255,255,.1) 60% 80%, rgba(255,255,255,.2) 80% 100%); border-radius: 8px; margin-bottom: 12px; }
+.hero .card-row { height: 18px; background: rgba(255,255,255,.1); border-radius: 6px; margin: 6px 0; }
+
+.section { background: #fff; }
+.section.alt { background: var(--bg-alt); }
+
+.feature-card { padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
+.feature-card .icon { font-size: 28px; color: var(--brand); }
+.feature-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.06); }
+
+.step-card { padding: 24px; border-radius: 12px; border: 1px dashed #e5e7eb; background: #fff; }
+.step-icon { font-size: 28px; }
+
+.mockup, .benefit-visual, .about-visual { height: 260px; border-radius: 12px; background: linear-gradient(135deg, rgba(0,191,165,.1), rgba(14,165,233,.1)); border: 1px solid #e5e7eb; }
+
+.price-card { padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.price-card.featured { border-color: var(--brand); box-shadow: 0 10px 24px rgba(0,191,165,.15); }
+
+.testimonial { padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.testimonial .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+
+.cta { background: linear-gradient(140deg, #0ea5e9 0%, #00bfa5 100%); color: #fff; }
+
+.footer { background: #0b0f14; color: #cbd5e1; }
+.footer a { color: #cbd5e1; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* Dark Mode for Landing Page */
+body.dark-mode {
+  --text: #f8f9fa !important;
+  --muted: #adb5bd !important;
+  --bg-alt: #2d2d2d !important;
+  background-color: #1a1a1a !important;
+  color: var(--text) !important;
+}
+
+body.dark-mode .navbar {
+  background: rgba(45, 45, 45, 0.95) !important;
+}
+
+body.dark-mode .navbar.scrolled {
+  background: #2d2d2d !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+
+body.dark-mode .navbar .navbar-brand,
+body.dark-mode .navbar .nav-link {
+  color: var(--text) !important;
+}
+
+body.dark-mode .section {
+  background: #1a1a1a !important;
+}
+
+body.dark-mode .section.alt {
+  background: var(--bg-alt) !important;
+}
+
+body.dark-mode .feature-card,
+body.dark-mode .step-card,
+body.dark-mode .price-card,
+body.dark-mode .testimonial {
+  background: var(--bg-alt) !important;
+  border-color: #404040 !important;
+  color: var(--text) !important;
+}
+
+body.dark-mode .feature-card .text-muted,
+body.dark-mode .step-card .text-muted,
+body.dark-mode .price-card .text-muted,
+body.dark-mode .testimonial .text-muted,
+body.dark-mode .text-muted {
+  color: var(--muted) !important;
+}
+
+body.dark-mode .mockup,
+body.dark-mode .benefit-visual,
+body.dark-mode .about-visual {
+  background: linear-gradient(135deg, rgba(0,191,165,.2), rgba(14,165,233,.2)) !important;
+  border-color: #404040 !important;
+}
+
+body.dark-mode .btn-outline-brand {
+  color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+body.dark-mode .btn-outline-brand:hover {
+  background: var(--brand) !important;
+  color: var(--brand-contrast) !important;
+}
+
+body.dark-mode .btn-outline-light {
+  color: #f8f9fa !important;
+  border-color: #f8f9fa !important;
+}
+
+body.dark-mode .btn-outline-light:hover {
+  background: #f8f9fa !important;
+  color: #1a1a1a !important;
+}
+
+/* Dark mode for headings and text */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+  color: var(--text) !important;
+}
+
+body.dark-mode p {
+  color: var(--text) !important;
+}
+
+/* Dark mode for hero section */
+body.dark-mode .hero {
+  background: linear-gradient(140deg, #0a4a5c 0%, #0d4d43 100%) !important;
+}
+
+/* Dark mode for containers */
+body.dark-mode .container {
+  color: var(--text) !important;
+}
+
+/* Dark mode for form switches */
+body.dark-mode .form-check-input {
+  background-color: #404040 !important;
+  border-color: #404040 !important;
+}
+
+body.dark-mode .form-check-input:checked {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+/* Debug style to ensure dark mode is applied */
+body.dark-mode::before {
+  content: "DARK MODE ACTIVE";
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: red;
+  color: white;
+  padding: 5px;
+  z-index: 9999;
+  font-size: 12px;
+}

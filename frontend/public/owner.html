@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard - Re-Own</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/owner.css">
+    <link rel="stylesheet" href="css/landing.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+</head>
+<body>
+    <nav id="nav" class="navbar navbar-expand-lg navbar-light fixed-top nav-transparent">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="landing.html#home">
+                <i class="fa-solid fa-house-chimney me-2"></i> Re-Own
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <!-- Notification Bell -->
+                    <li class="nav-item me-2 position-relative">
+                        <a id="nav-notifications" class="nav-link position-relative" href="#" title="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span id="badge-owner-notifications" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="app-container">
+        <!-- Owner Dashboard Content -->
+        <main class="main-content">
+            <div id="owner-dashboard-container" class="dashboard-container">
+                <div class="container py-5">
+                    <!-- User Profile Section -->
+                    <div class="mb-4">
+                        <div class="card shadow-sm border-0 bg-light">
+                            <div class="card-body py-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3">
+                                                <i class="fas fa-user-crown text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">Welcome back, <span id="user-full-name">Loading...</span></h6>
+                                                <p class="mb-0 text-muted small">
+                                                    <span class="me-3"><i class="fas fa-id-badge me-1"></i>ID: <span id="user-id">-</span></span>
+                                                    <span class="me-3"><i class="fas fa-map-marker-alt me-1"></i><span id="user-location">Loading...</span></span>
+                                                    <span><i class="fas fa-crown me-1"></i>Owner Account</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="d-flex flex-column align-items-end">
+                                            <small class="text-muted mb-2">Last login: <span id="last-login">Loading...</span></small>
+                                            <button class="btn btn-outline-danger btn-sm logout-btn" type="button">
+                                                <i class="fas fa-sign-out-alt me-1"></i>Sign Out
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <h2 class="fw-bold text-center"><span class="me-3">🧭</span>OWNER DASHBOARD</h2>
+                        <p class="text-muted text-center lead">Manage your properties, tenants, and operations efficiently</p>
+                        <hr class="mx-auto" style="width: 100px; height: 3px; background: linear-gradient(90deg, #00bfa5, #3b82f6); border: none;" />
+                    </div>
+                    <!-- Table of Contents -->
+                    <div class="mb-5">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body py-4">
+                                <h5 class="card-title mb-3"><i class="fas fa-compass me-2 text-primary"></i>Quick Navigation</h5>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-property"><i class="fas fa-building me-1"></i>Property</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-tenant"><i class="fas fa-users me-1"></i>Tenant</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-utilities"><i class="fas fa-bolt me-1"></i>Utilities</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-payments"><i class="fas fa-credit-card me-1"></i>Payments</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-notify"><i class="fas fa-bell me-1"></i>Notifications</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-analytics"><i class="fas fa-chart-bar me-1"></i>Analytics</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="#owner-settings"><i class="fas fa-cog me-1"></i>Settings</a>
+                                    <a class="btn btn-sm btn-outline-success ms-auto" data-link="renter" href="#"><i class="fas fa-exchange-alt me-1"></i>Open Renter</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6" id="owner-property">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-building text-primary me-2"></i>PROPERTY MANAGEMENT MODULE
+                                    </h5>
+                                    <hr />
+                                    <div class="property-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-add-property" class="btn action-add-property shadow-sm btn-primary" type="button">
+                                                <i class="fas fa-plus-circle me-2"></i>Add New Property (House / Flat / Room)
+                                            </button>
+                                            <button id="action-edit-property" class="btn action-edit-property shadow-sm btn-warning" type="button">
+                                                <i class="fas fa-edit me-2"></i>Edit / Update Property Information
+                                            </button>
+                                            <button id="action-set-rent-deposit" class="btn action-set-rent-deposit shadow-sm btn-success" type="button">
+                                                <i class="fas fa-dollar-sign me-2"></i>Set Rent Rate & Deposit Amount
+                                            </button>
+                                            <button id="action-upload-docs" class="btn action-upload-docs shadow-sm btn-info" type="button">
+                                                <i class="fas fa-upload me-2"></i>Upload Property Photos & Documents
+                                            </button>
+                                            <button id="action-change-status" class="btn action-change-status shadow-sm btn-secondary" type="button">
+                                                <i class="fas fa-toggle-on me-2"></i>Change Availability Status (Vacant/Rented)
+                                            </button>
+                                            <button id="action-view-all-properties" class="btn action-view-all-properties shadow-sm btn-dark" type="button">
+                                                <i class="fas fa-list me-2"></i>View All Properties
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="owner-tenant">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-users text-primary me-2"></i>TENANT MANAGEMENT MODULE
+                                    </h5>
+                                    <hr />
+                                    <div class="tenant-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-assign-property" class="btn action-assign-property shadow-sm" type="button">
+                                                <i class="fas fa-home me-2"></i>Assign Property to Tenant
+                                            </button>
+                                            <button id="action-view-tenants" class="btn action-view-tenants shadow-sm" type="button">
+                                                <i class="fas fa-users me-2"></i>View All Tenants & Leases
+                                            </button>
+                                            <button id="action-manage-lease" class="btn action-manage-lease shadow-sm" type="button">
+                                                <i class="fas fa-file-contract me-2"></i>Manage Lease Terms
+                                            </button>
+                                            <button id="action-terminate-lease" class="btn action-terminate-lease shadow-sm" type="button">
+                                                <i class="fas fa-times-circle me-2"></i>Terminate Lease
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="owner-utilities">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-bolt text-primary me-2"></i>UTILITY TRACKING MODULE
+                                    </h5>
+                                    <hr />
+                                    <div class="utility-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-add-utility-reading" class="btn action-add-utility-reading shadow-sm" type="button">
+                                                <i class="fas fa-tachometer-alt me-2"></i>Add Monthly Utility Readings
+                                            </button>
+                                            <button id="action-track-bills" class="btn action-track-bills shadow-sm" type="button">
+                                                <i class="fas fa-receipt me-2"></i>Track Bills (Meter Readings / Charges)
+                                            </button>
+                                            <button id="action-utility-reports" class="btn action-utility-reports shadow-sm" type="button">
+                                                <i class="fas fa-chart-line me-2"></i>Generate Utility Reports
+                                            </button>
+                                            <button id="action-combine-invoice" class="btn action-combine-invoice shadow-sm" type="button">
+                                                <i class="fas fa-file-invoice me-2"></i>Combine Utility + Rent in One Invoice
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="owner-payments">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-credit-card text-primary me-2"></i>RENT & PAYMENT MANAGEMENT
+                                    </h5>
+                                    <hr />
+                                    <div class="payment-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-generate-invoice" class="btn action-generate-invoice shadow-sm" type="button">
+                                                <i class="fas fa-file-invoice-dollar me-2"></i>Generate Rent Invoices
+                                            </button>
+                                            <button id="action-track-payments" class="btn action-track-payments shadow-sm" type="button">
+                                                <i class="fas fa-money-check me-2"></i>Track Payments (Received / Pending)
+                                            </button>
+                                            <button id="action-apply-fees" class="btn action-apply-fees shadow-sm" type="button">
+                                                <i class="fas fa-calculator me-2"></i>Apply Late Fees or Discounts
+                                            </button>
+                                            <button id="action-record-payment" class="btn action-record-payment shadow-sm" type="button">
+                                                <i class="fas fa-hand-holding-usd me-2"></i>Record Payment Methods
+                                            </button>
+                                            <button id="action-export-history" class="btn action-export-history shadow-sm" type="button">
+                                                <i class="fas fa-download me-2"></i>Export Payment History (Excel / PDF)
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="owner-notify">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-bell text-primary me-2"></i>NOTIFICATION & ALERT SYSTEM
+                                    </h5>
+                                    <hr />
+                                    <div class="notification-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-rent-alerts" class="btn action-rent-alerts shadow-sm" type="button">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>Rent Due Alerts to Tenants
+                                            </button>
+                                            <button id="action-utility-alerts" class="btn action-utility-alerts shadow-sm" type="button">
+                                                <i class="fas fa-lightbulb me-2"></i>Utility Bill Alerts
+                                            </button>
+                                            <button id="action-contract-reminder" class="btn action-contract-reminder shadow-sm" type="button">
+                                                <i class="fas fa-calendar-times me-2"></i>Tenant Contract Expiry Reminder
+                                            </button>
+                                            <button id="action-payment-ack" class="btn action-payment-ack shadow-sm" type="button">
+                                                <i class="fas fa-check-circle me-2"></i>Payment Received Acknowledgement
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="owner-analytics">
+                            <div class="card h-100 shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-chart-bar text-primary me-2"></i>REPORTING & ANALYTICS
+                                    </h5>
+                                    <hr />
+                                    <div class="analytics-management">
+                                        <div class="d-grid gap-3">
+                                            <button id="action-occupancy-rate" class="btn action-occupancy-rate shadow-sm" type="button">
+                                                <i class="fas fa-percentage me-2"></i>Occupancy Rate Summary
+                                            </button>
+                                            <button id="action-collection-graphs" class="btn action-collection-graphs shadow-sm" type="button">
+                                                <i class="fas fa-chart-line me-2"></i>Rent Collection Graphs
+                                            </button>
+                                            <button id="action-income-breakdown" class="btn action-income-breakdown shadow-sm" type="button">
+                                                <i class="fas fa-chart-pie me-2"></i>Income / Expense Breakdown
+                                            </button>
+                                            <button id="action-utility-trends" class="btn action-utility-trends shadow-sm" type="button">
+                                                <i class="fas fa-trending-up me-2"></i>Utility Consumption Trends
+                                            </button>
+                                            <button id="action-export-reports" class="btn action-export-reports shadow-sm" type="button">
+                                                <i class="fas fa-file-export me-2"></i>Export Reports to Excel / PDF
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12" id="owner-settings">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        7️⃣ SETTINGS & SECURITY
+                                        <a href="#owner-settings" class="stretched-link" aria-label="Jump to Settings"></a>
+                                    </h5>
+                                    <hr />
+                                    <p class="mb-3 text-muted">Manage account settings, roles, and security preferences.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-moon me-2"></i>Dark Mode</span>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                                            <label class="form-check-label" for="darkModeToggle"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <footer class="text-center py-3" style="position:fixed; left:0; right:0; bottom:0;">
+        <div class="container small text-muted">
+            <button class="btn btn-sm btn-outline-secondary logout-btn" type="button">Log out</button>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/errors.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/user-profile.js"></script>
+    <script src="js/site.js"></script>
+    <script src="js/linking.js"></script>
+    <script src="js/properties.js"></script>
+    <script src="js/landing-page.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/properties.js"></script>
+    <script src="js/payments.js"></script>
+    <script src="js/utilities.js"></script>
+    <script src="js/main.js"></script>
+    <!-- Properties.js binds all owner actions including Add Property on DOMContentLoaded -->
+</body>
+</html>
