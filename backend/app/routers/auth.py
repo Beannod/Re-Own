@@ -1,3 +1,16 @@
+from backend.app.core.logging_config import get_logger, log_exception
+
+auth_logger = get_logger('auth')
+security_logger = get_logger('security')
+
+def log_auth_event(msg):
+    auth_logger.info(msg)
+
+def log_auth_error(msg, exc=None):
+    if exc:
+        log_exception(auth_logger, msg, exc)
+    else:
+        auth_logger.error(msg)
 from fastapi import APIRouter, HTTPException, status
 from typing import List
 from ..database import StoredProcedures

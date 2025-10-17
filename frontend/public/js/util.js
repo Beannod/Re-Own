@@ -30,3 +30,23 @@ class Util {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
     }
 }
+
+// Clear browser localStorage and sessionStorage
+function clearBrowserStorage() {
+    localStorage.clear();
+    sessionStorage.clear();
+    console.log('localStorage and sessionStorage cleared');
+}
+
+// Optionally, call this on logout or add a button:
+// clearBrowserStorage();
+
+// Set password to user's own email
+function setPasswordToEmail(emailInputId, passwordInputId) {
+    var email = document.getElementById(emailInputId).value.trim();
+    document.getElementById(passwordInputId).value = email;
+}
+
+// Example usage:
+// setPasswordToEmail('login-email', 'login-password');
+// You can call this on a button click or form event.

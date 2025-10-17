@@ -1,3 +1,53 @@
+"""
+Example usage:
+
+from .logging_config import get_logger, log_exception
+
+# Get logger for app
+app_logger = get_logger('app')
+app_logger.info('Application started')
+
+# Get logger for API
+api_logger = get_logger('api')
+api_logger.warning('API warning example')
+
+# Log an exception with traceback
+try:
+    1 / 0
+except Exception as exc:
+    log_exception(app_logger, 'Unhandled exception occurred', exc)
+"""
+import logging
+import os
+
+LOG_DIR = os.path.join(os.path.dirname(__file__), '../../logs')
+
+LOG_FILES = {
+    'app': 'app.log',
+    'api': 'api.log',
+    'auth': 'auth.log',
+    'database': 'database.log',
+    'security': 'security.log',
+    'frontend_errors': 'frontend_errors.log',
+    'python_errors': 'python_errors.log',
+    'performance': 'performance.log',
+    'user_activity': 'user_activity.log',
+    'background_tasks': 'background_tasks.log',
+}
+
+def get_logger(name, level=logging.INFO):
+    logger = logging.getLogger(name)
+    if not logger.hasHandlers():
+        log_file = os.path.join(LOG_DIR, LOG_FILES.get(name, f'{name}.log'))
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(level)
+    return logger
+
+def log_exception(logger, msg, exc):
+    logger.error(msg, exc_info=exc)
 import logging
 import os
 from logging.handlers import RotatingFileHandler

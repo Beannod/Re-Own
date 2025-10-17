@@ -32,6 +32,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add global error handling
     window.onerror = function(msg, url, lineNo, columnNo, error) {
         console.error('Global error:', error);
+        // Send error to backend
+        fetch(CONFIG.API_BASE_URL.replace('/api','') + '/log_frontend_error', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: msg,
+                url: url,
+                line: lineNo,
+                column: columnNo,
+                stack: error && error.stack ? error.stack : ''
+            })
+        });
         Swal.fire({
             icon: 'error',
             title: 'Something went wrong',
@@ -39,4 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return false;
     };
+
+    // JS error test removed
+    // });
 });

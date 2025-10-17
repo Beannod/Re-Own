@@ -1,0 +1,1 @@
+Cleanup marker: All SQL files except complete_database.sql should be deleted.

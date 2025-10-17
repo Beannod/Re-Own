@@ -48,19 +48,27 @@ class Properties {
 
     static bindOwnerActions() {
         const qs = (id) => document.getElementById(id);
+        // Helper to log clicks
+        const logClick = (action) => {
+            fetch(CONFIG.API_BASE_URL.replace(/\/api$/, '') + '/log_click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, timestamp: new Date().toISOString(), user: localStorage.getItem(CONFIG.TOKEN_KEY) })
+            });
+        };
         // Property management actions
-        qs('action-add-property')?.addEventListener('click', () => Properties.promptAddProperty());
-        qs('action-edit-property')?.addEventListener('click', () => Properties.promptEditProperty());
-        qs('action-set-rent-deposit')?.addEventListener('click', () => Properties.promptSetRentDeposit());
-        qs('action-upload-docs')?.addEventListener('click', () => Properties.promptUploadDocuments());
-        qs('action-change-status')?.addEventListener('click', () => Properties.promptChangeStatus());
-        qs('action-view-all-properties')?.addEventListener('click', () => Properties.showAllProperties());
+        qs('action-add-property')?.addEventListener('click', () => { logClick('add-property'); Properties.promptAddProperty(); });
+        qs('action-edit-property')?.addEventListener('click', () => { logClick('edit-property'); Properties.promptEditProperty(); });
+        qs('action-set-rent-deposit')?.addEventListener('click', () => { logClick('set-rent-deposit'); Properties.promptSetRentDeposit(); });
+        qs('action-upload-docs')?.addEventListener('click', () => { logClick('upload-docs'); Properties.promptUploadDocuments(); });
+        qs('action-change-status')?.addEventListener('click', () => { logClick('change-status'); Properties.promptChangeStatus(); });
+        qs('action-view-all-properties')?.addEventListener('click', () => { logClick('view-all-properties'); Properties.showAllProperties(); });
 
         // Tenant management actions
-        qs('action-assign-property')?.addEventListener('click', () => Properties.promptAssignProperty());
-        qs('action-view-tenants')?.addEventListener('click', () => Properties.showTenantList());
-        qs('action-manage-lease')?.addEventListener('click', () => Properties.promptManageLease());
-        qs('action-terminate-lease')?.addEventListener('click', () => Properties.promptTerminateLease());
+        qs('action-assign-property')?.addEventListener('click', () => { logClick('assign-property'); Properties.promptAssignProperty(); });
+        qs('action-view-tenants')?.addEventListener('click', () => { logClick('view-tenants'); Properties.showTenantList(); });
+        qs('action-manage-lease')?.addEventListener('click', () => { logClick('manage-lease'); Properties.promptManageLease(); });
+        qs('action-terminate-lease')?.addEventListener('click', () => { logClick('terminate-lease'); Properties.promptTerminateLease(); });
     }
 
     static _propertiesOptionsHtml() {
@@ -71,108 +79,310 @@ class Properties {
 
     static async promptAddProperty() {
         const { value: formValues } = await Swal.fire({
-            title: '<span style="color: #00bfa5;">Add New Property</span>',
+            title: '<span style="color: #00bfa5; font-size: 1.4rem;">Add New Property</span>',
             html: `
-                <div style="text-align: left; font-family: Arial, sans-serif;">
-                    <div class="row g-2 text-start">
-                      <div class="col-12">
-                          <label for="swal-title" style="font-weight: bold;">Property Title</label>
-                          <input id="swal-title" class="form-control" placeholder="Title" style="border: 1px solid #ddd; border-radius: 5px;" />
+                <div style="text-align: left; font-family: Arial, sans-serif; font-size: 0.85rem;">
+                    <div class="row g-1 text-start" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
+                      
+                      <!-- Property Information Section -->
+                      <div class="col-12" style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                          <h6 style="color: #495057; margin: 0; font-size: 0.9rem; font-weight: 600;">🏠 Property Information</h6>
                       </div>
-                      <div class="col-12">
-                          <label for="swal-address" style="font-weight: bold;">Address</label>
-                          <input id="swal-address" class="form-control" placeholder="Address" style="border: 1px solid #ddd; border-radius: 5px;" />
+                      
+                      <div class="col-6">
+                          <label for="swal-title" style="font-weight: 600; font-size: 0.8rem;">Property Title</label>
+                          <input id="swal-title" class="form-control form-control-sm" placeholder="Property Title" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
                       </div>
                       <div class="col-6">
-                          <label for="swal-type" style="font-weight: bold;">Property Type</label>
-                          <select id="swal-type" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
+                          <label for="swal-property-code" style="font-weight: 600; font-size: 0.8rem;">Property Code / ID</label>
+                          <input id="swal-property-code" class="form-control form-control-sm" placeholder="Unique Property Code" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-12">
+                          <label for="swal-address" style="font-weight: 600; font-size: 0.8rem;">Full Address</label>
+                          <input id="swal-address" class="form-control form-control-sm" placeholder="Complete Address" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-3">
+                          <label for="swal-street" style="font-weight: 600; font-size: 0.8rem;">Street</label>
+                          <input id="swal-street" class="form-control form-control-sm" placeholder="Street" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-city" style="font-weight: 600; font-size: 0.8rem;">City</label>
+                          <input id="swal-city" class="form-control form-control-sm" placeholder="City" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-state" style="font-weight: 600; font-size: 0.8rem;">State</label>
+                          <input id="swal-state" class="form-control form-control-sm" placeholder="State" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-zip" style="font-weight: 600; font-size: 0.8rem;">Zip Code</label>
+                          <input id="swal-zip" class="form-control form-control-sm" placeholder="Zip" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-4">
+                          <label for="swal-type" style="font-weight: 600; font-size: 0.8rem;">Property Type</label>
+                          <select id="swal-type" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
                               <option value="Flat" selected>Flat</option>
                               <option value="House">House</option>
+                              <option value="Commercial">Commercial</option>
+                              <option value="Land">Land</option>
                               <option value="Room">Room</option>
                               <option value="Apartment">Apartment</option>
                               <option value="Studio">Studio</option>
                               <option value="Villa">Villa</option>
-                              <option value="Commercial">Commercial</option>
                           </select>
                       </div>
-                      <div class="col-3">
-                          <label for="swal-bed" style="font-weight: bold;">Bedrooms</label>
-                          <select id="swal-bed" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
+                      <div class="col-2">
+                          <label for="swal-bed" style="font-weight: 600; font-size: 0.8rem;">Bedrooms</label>
+                          <select id="swal-bed" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
                               ${Array.from({length:11},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i}</option>`).join('')}
                           </select>
                       </div>
-                      <div class="col-3">
-                          <label for="swal-bath" style="font-weight: bold;">Bathrooms</label>
-                          <select id="swal-bath" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
+                      <div class="col-2">
+                          <label for="swal-bath" style="font-weight: 600; font-size: 0.8rem;">Bathrooms</label>
+                          <select id="swal-bath" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
                               ${Array.from({length:11},(_,i)=>`<option value="${i}" ${i===1?'selected':''}>${i}</option>`).join('')}
                           </select>
                       </div>
-                      <div class="col-6">
-                          <label for="swal-area" style="font-weight: bold;">Area (sqft)</label>
-                          <input id="swal-area" type="number" step="0.01" class="form-control" placeholder="Area (sqft)" style="border: 1px solid #ddd; border-radius: 5px;" />
+                      <div class="col-4">
+                          <label for="swal-area" style="font-weight: 600; font-size: 0.8rem;">Area (sqft)</label>
+                          <input id="swal-area" type="number" step="0.01" class="form-control form-control-sm" placeholder="Area" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
                       </div>
-                      <div class="col-6">
-                          <label for="swal-rent" style="font-weight: bold;">Rent Amount</label>
-                          <input id="swal-rent" type="number" step="0.01" class="form-control" placeholder="Rent Amount" style="border: 1px solid #ddd; border-radius: 5px;" />
+                      
+                      <div class="col-3">
+                          <label for="swal-floor-number" style="font-weight: 600; font-size: 0.8rem;">Floor Number</label>
+                          <input id="swal-floor-number" type="number" class="form-control form-control-sm" placeholder="Floor" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
                       </div>
-                      <div class="col-6">
-                          <label for="swal-deposit" style="font-weight: bold;">Deposit (optional)</label>
-                          <input id="swal-deposit" type="number" step="0.01" class="form-control" placeholder="Deposit (optional)" style="border: 1px solid #ddd; border-radius: 5px;" />
+                      <div class="col-3">
+                          <label for="swal-total-floors" style="font-weight: 600; font-size: 0.8rem;">Total Floors</label>
+                          <input id="swal-total-floors" type="number" class="form-control form-control-sm" placeholder="Total" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
                       </div>
-                      <div class="col-6">
-                          <label for="swal-status" style="font-weight: bold;">Status</label>
-                          <select id="swal-status" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
-                              <option value="vacant" selected>Available</option>
-                              <option value="rented">Rented</option>
-                              <option value="maintenance">Maintenance</option>
+                      <div class="col-3">
+                          <label for="swal-status" style="font-weight: 600; font-size: 0.8rem;">Status</label>
+                          <select id="swal-status" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="Available" selected>Available</option>
+                              <option value="Occupied">Occupied</option>
+                              <option value="Under Maintenance">Under Maintenance</option>
                           </select>
                       </div>
+                      <div class="col-3">
+                          <label for="swal-age" style="font-weight: 600; font-size: 0.8rem;">Age (years)</label>
+                          <input id="swal-age" type="number" class="form-control form-control-sm" placeholder="Age" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-4">
+                          <label for="swal-furnishing" style="font-weight: 600; font-size: 0.8rem;">Furnishing Type</label>
+                          <select id="swal-furnishing" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="">Select...</option>
+                              <option value="Furnished">Furnished</option>
+                              <option value="Semi-Furnished">Semi-Furnished</option>
+                              <option value="Unfurnished" selected>Unfurnished</option>
+                          </select>
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-parking" style="font-weight: 600; font-size: 0.8rem;">Parking Space</label>
+                          <input id="swal-parking" class="form-control form-control-sm" placeholder="Yes/No/Number" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-balcony" style="font-weight: 600; font-size: 0.8rem;">Balcony</label>
+                          <input id="swal-balcony" class="form-control form-control-sm" placeholder="Yes/No/Number" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-6">
+                          <label for="swal-facing" style="font-weight: 600; font-size: 0.8rem;">Facing Direction</label>
+                          <select id="swal-facing" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="">Select...</option>
+                              <option value="North">North</option>
+                              <option value="South">South</option>
+                              <option value="East">East</option>
+                              <option value="West">West</option>
+                              <option value="North-East">North-East</option>
+                              <option value="North-West">North-West</option>
+                              <option value="South-East">South-East</option>
+                              <option value="South-West">South-West</option>
+                          </select>
+                      </div>
+                      <div class="col-6">
+                          <label for="swal-desc" style="font-weight: 600; font-size: 0.8rem;">Description / Notes</label>
+                          <textarea id="swal-desc" class="form-control form-control-sm" placeholder="Property description..." style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px; height: 60px;"></textarea>
+                      </div>
+
+                      <!-- Financial Details Section -->
+                      <div class="col-12" style="background: #f0f8f5; padding: 8px; border-radius: 4px; margin-bottom: 8px; margin-top: 10px;">
+                          <h6 style="color: #495057; margin: 0; font-size: 0.9rem; font-weight: 600;">💰 Financial / Rate Details</h6>
+                      </div>
+                      
+                      <div class="col-3">
+                          <label for="swal-rent" style="font-weight: 600; font-size: 0.8rem;">Rent Amount (Monthly)</label>
+                          <input id="swal-rent" type="number" step="0.01" class="form-control form-control-sm" placeholder="Rent" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-deposit" style="font-weight: 600; font-size: 0.8rem;">Deposit</label>
+                          <input id="swal-deposit" type="number" step="0.01" class="form-control form-control-sm" placeholder="Deposit" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-electricity" style="font-weight: 600; font-size: 0.8rem;">Electricity Rate</label>
+                          <input id="swal-electricity" type="number" step="0.01" class="form-control form-control-sm" placeholder="Per unit" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-3">
+                          <label for="swal-internet-rate" style="font-weight: 600; font-size: 0.8rem;">Internet Rate</label>
+                          <input id="swal-internet-rate" type="number" step="0.01" class="form-control form-control-sm" placeholder="Monthly" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-4">
+                          <label for="swal-water" style="font-weight: 600; font-size: 0.8rem;">Water Bill</label>
+                          <input id="swal-water" type="number" step="0.01" class="form-control form-control-sm" placeholder="Monthly" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-maintenance" style="font-weight: 600; font-size: 0.8rem;">Maintenance Charges</label>
+                          <input id="swal-maintenance" type="number" step="0.01" class="form-control form-control-sm" placeholder="Monthly" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-gas" style="font-weight: 600; font-size: 0.8rem;">Gas/LPG Charges</label>
+                          <input id="swal-gas" type="number" step="0.01" class="form-control form-control-sm" placeholder="Monthly" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+
+                      <!-- Amenities Section -->
+                      <div class="col-12" style="background: #f5f0f8; padding: 8px; border-radius: 4px; margin-bottom: 8px; margin-top: 10px;">
+                          <h6 style="color: #495057; margin: 0; font-size: 0.9rem; font-weight: 600;">🔧 Amenities / Features</h6>
+                      </div>
+                      
+                      <div class="col-2">
+                          <label for="swal-elevator" style="font-weight: 600; font-size: 0.8rem;">Elevator</label>
+                          <select id="swal-elevator" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="">Select...</option>
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                          </select>
+                      </div>
+                      <div class="col-2">
+                          <label for="swal-gym" style="font-weight: 600; font-size: 0.8rem;">Gym/Pool</label>
+                          <select id="swal-gym" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="">Select...</option>
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                          </select>
+                      </div>
+                      <div class="col-2">
+                          <label for="swal-garden" style="font-weight: 600; font-size: 0.8rem;">Garden Access</label>
+                          <select id="swal-garden" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
+                              <option value="">Select...</option>
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                          </select>
+                      </div>
+                      <div class="col-6">
+                          <label for="swal-security" style="font-weight: 600; font-size: 0.8rem;">Security Features</label>
+                          <input id="swal-security" class="form-control form-control-sm" placeholder="CCTV, Guard, etc." style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
                       <div class="col-12">
-                          <label for="swal-desc" style="font-weight: bold;">Description</label>
-                          <textarea id="swal-desc" class="form-control" placeholder="Description" style="border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                          <label for="swal-internet-provider" style="font-weight: 600; font-size: 0.8rem;">Internet Provider / Plan Name</label>
+                          <input id="swal-internet-provider" class="form-control form-control-sm" placeholder="Internet provider details" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
                       </div>
+
+                      <!-- Other Info Section -->
+                      <div class="col-12" style="background: #f8f5f0; padding: 8px; border-radius: 4px; margin-bottom: 8px; margin-top: 10px;">
+                          <h6 style="color: #495057; margin: 0; font-size: 0.9rem; font-weight: 600;">🏦 Other Information</h6>
+                      </div>
+                      
+                      <div class="col-4">
+                          <label for="swal-owner-name" style="font-weight: 600; font-size: 0.8rem;">Owner Name</label>
+                          <input id="swal-owner-name" class="form-control form-control-sm" placeholder="Owner name" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-owner-contact" style="font-weight: 600; font-size: 0.8rem;">Owner Contact</label>
+                          <input id="swal-owner-contact" class="form-control form-control-sm" placeholder="Contact number" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      <div class="col-4">
+                          <label for="swal-listing-date" style="font-weight: 600; font-size: 0.8rem;">Listing Date</label>
+                          <input id="swal-listing-date" type="date" class="form-control form-control-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;" />
+                      </div>
+                      
+                      <div class="col-12">
+                          <label for="swal-lease-terms" style="font-weight: 600; font-size: 0.8rem;">Lease Terms Default</label>
+                          <textarea id="swal-lease-terms" class="form-control form-control-sm" placeholder="Default lease terms, minimum lease period, notice period..." style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px; height: 50px;"></textarea>
+                      </div>
+                      
                     </div>
                 </div>
             `,
+            width: '900px',
             focusConfirm: false,
             showCancelButton: true,
+            confirmButtonText: 'Add Property',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'compact-property-modal'
+            },
             preConfirm: () => {
-                const v = (id) => document.getElementById(id).value.trim();
+                const v = (id) => {
+                    const el = document.getElementById(id);
+                    return el ? el.value.trim() : '';
+                };
+                const vNum = (id) => {
+                    const val = v(id);
+                    return val ? parseFloat(val) : null;
+                };
+                const vInt = (id) => {
+                    const val = v(id);
+                    return val ? parseInt(val) : null;
+                };
+                const vBool = (id) => {
+                    const val = v(id);
+                    return val === 'true' ? true : val === 'false' ? false : null;
+                };
+                
                 if (!v('swal-title') || !v('swal-address') || !v('swal-type') || !v('swal-rent')) {
-                    Swal.showValidationMessage('Title, Address, Type and Rent are required');
+                    Swal.showValidationMessage('Title, Address, Property Type and Rent Amount are required');
                     return false;
                 }
+                
                 return {
                     title: v('swal-title'),
+                    property_code: v('swal-property-code'),
                     address: v('swal-address'),
-                    type: v('swal-type'),
-                    bedrooms: v('swal-bed'),
-                    bathrooms: v('swal-bath'),
-                    area: v('swal-area'),
-                    rent: v('swal-rent'),
-                    deposit: v('swal-deposit'),
+                    street: v('swal-street'),
+                    city: v('swal-city'),
+                    state: v('swal-state'),
+                    zip_code: v('swal-zip'),
+                    property_type: v('swal-type'),
+                    bedrooms: vInt('swal-bed'),
+                    bathrooms: vInt('swal-bath'),
+                    area: vNum('swal-area'),
+                    floor_number: vInt('swal-floor-number'),
+                    total_floors: vInt('swal-total-floors'),
                     status: v('swal-status'),
-                    description: v('swal-desc')
+                    furnishing_type: v('swal-furnishing'),
+                    parking_space: v('swal-parking'),
+                    balcony: v('swal-balcony'),
+                    facing_direction: v('swal-facing'),
+                    age_of_property: vInt('swal-age'),
+                    description: v('swal-desc'),
+                    rent_amount: vNum('swal-rent'),
+                    deposit_amount: vNum('swal-deposit'),
+                    electricity_rate: vNum('swal-electricity'),
+                    internet_rate: vNum('swal-internet-rate'),
+                    water_bill: vNum('swal-water'),
+                    maintenance_charges: vNum('swal-maintenance'),
+                    gas_charges: vNum('swal-gas'),
+                    elevator: vBool('swal-elevator'),
+                    gym_pool_clubhouse: vBool('swal-gym'),
+                    security_features: v('swal-security'),
+                    garden_park_access: vBool('swal-garden'),
+                    internet_provider: v('swal-internet-provider'),
+                    owner_name: v('swal-owner-name'),
+                    owner_contact: v('swal-owner-contact'),
+                    listing_date: v('swal-listing-date') ? v('swal-listing-date') : null,
+                    lease_terms_default: v('swal-lease-terms')
                 };
             }
         });
         if (formValues) {
             try {
-                // Map form values to backend schema
-                const payload = {
-                    title: formValues.title,
-                    address: formValues.address,
-                    property_type: formValues.type,
-                    bedrooms: parseInt(formValues.bedrooms || '0'),
-                    bathrooms: parseInt(formValues.bathrooms || '0'),
-                    area: parseFloat(formValues.area || '0'),
-                    rent_amount: parseFloat(formValues.rent || '0'),
-                    deposit_amount: formValues.deposit ? parseFloat(formValues.deposit) : null,
-                    description: formValues.description || '',
-                    status: formValues.status || 'vacant'
-                };
-                await API.createProperty(payload);
-                Swal.fire('Success', 'Property added!', 'success');
+                await API.createProperty(formValues);
+                Swal.fire('Success', 'Property added successfully!', 'success');
                 // Refresh UI cache and any tables
                 await Properties.loadProperties();
             } catch (error) {
@@ -184,6 +394,8 @@ class Properties {
 
     static async promptEditProperty() {
         await Properties.ensureProperties();
+        console.log('DEBUG: Properties._cache', Properties._cache);
+        console.log('DEBUG: Properties._propertiesOptionsHtml()', Properties._propertiesOptionsHtml());
         const { value: selection } = await Swal.fire({
             title: 'Select Property to Edit',
             html: `<select id="swal-prop" class="form-select">${Properties._propertiesOptionsHtml()}</select>`,
@@ -193,6 +405,7 @@ class Properties {
         });
         if (!selection) return;
         const prop = (Properties._cache.properties || []).find(p => String(p.id) === String(selection));
+        console.log('DEBUG: Selected property', prop);
         if (!prop) return;
         // reuse add modal with prefill-like simple fields
                 const { value: formValues } = await Swal.fire({

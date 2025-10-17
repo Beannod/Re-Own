@@ -18,4 +18,4 @@ A property management system with FastAPI backend and a static HTML/JS frontend.
 - Cross-page deep linking supported via query params (tenantId, propertyId, unitId, leaseId, invoiceId, transactionId, maintenanceId, meterId)
 - Owner/Renter pages include table of contents and section anchors
 --
-  $pbkdf2-sha256$29000$8F4LQch5r9X6PwfA2BvjHA$oGJZmKp.BeWQp.mkJ62JPg2YQubHnl.CV2ieAHUki0A
+  update users set hashed_password='$pbkdf2-sha256$29000$8F4LQch5r9X6PwfA2BvjHA$oGJZmKp.BeWQp.mkJ62JPg2YQubHnl.CV2ieAHUki0A'

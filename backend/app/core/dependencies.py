@@ -1,3 +1,15 @@
+from backend.app.core.logging_config import get_logger, log_exception
+
+app_logger = get_logger('app')
+
+def log_dependency_event(msg):
+    app_logger.info(msg)
+
+def log_dependency_error(msg, exc=None):
+    if exc:
+        log_exception(app_logger, msg, exc)
+    else:
+        app_logger.error(msg)
 from fastapi import Request, HTTPException, status, Depends
 from ..core import security
 import logging

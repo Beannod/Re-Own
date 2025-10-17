@@ -1,4 +1,47 @@
+from backend.app.core.logging_config import get_logger, log_exception
 from fastapi import FastAPI, HTTPException, Request, APIRouter
+from fastapi.exceptions import ResponseValidationError
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import traceback
+import logging
+from datetime import datetime
+import json
+from pathlib import Path
+import os
+from .ai_error_tracker import track_error, ai_tracker
+from .database import StoredProcedures
+from .routers import auth as auth_router
+from .routers import properties as properties_router
+from .routers import payments as payments_router
+from .routers import tenants as tenants_router
+
+app = FastAPI()
+
+app_logger = get_logger('app')
+api_logger = get_logger('api')
+performance_logger = get_logger('performance')
+user_activity_logger = get_logger('user_activity')
+background_tasks_logger = get_logger('background_tasks')
+
+app_logger.info('FastAPI application starting')
+
+@app.middleware('http')
+async def log_requests(request, call_next):
+    import time
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    performance_logger.info(f"{request.method} {request.url.path} {response.status_code} {duration:.3f}s")
+    return response
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    log_exception(app_logger, f"Unhandled exception for {request.url}", exc)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+from fastapi import FastAPI, HTTPException, Request, APIRouter
+from fastapi.exceptions import ResponseValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -93,6 +136,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.exceptions import ResponseValidationError
+
+# Handler for FastAPI response validation errors
+@app.exception_handler(ResponseValidationError)
+async def response_validation_exception_handler(request: Request, exc: ResponseValidationError):
+    logger.error(
+        f"Response validation error on {request.method} {request.url}",
+        exc_info=exc,
+        extra={
+            "request_path": str(request.url),
+            "method": request.method,
+            "client_host": request.client.host if request.client else "unknown",
+            "headers": dict(request.headers)
+        }
+    )
+    error_data = track_error(
+        error=exc,
+        context=f"Response validation error in {request.method} {request.url.path}",
+        user_action="API response validation",
+        endpoint=str(request.url.path),
+        request_data={
+            "method": request.method,
+            "url": str(request.url),
+            "headers": dict(request.headers)
+        },
+        severity="ERROR"
+    )
+    error_details = {
+        "error": str(exc),
+        "type": type(exc).__name__,
+        "traceback": traceback.format_exc(),
+        "path": str(request.url),
+        "method": request.method,
+        "timestamp": datetime.now().isoformat(),
+        "ai_tracking_id": error_data.get("timestamp")
+    }
+    logger.error(f"ResponseValidationError: {error_details}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"Response validation error: {str(exc)}",
+            "debug_info": error_details,
+            "ai_suggestions": error_data.get("suggested_fixes", [])
+        }
+    )
 
 # Global exception handler with AI error tracking
 @app.exception_handler(Exception)
@@ -266,6 +355,7 @@ Mount versioned API routers under /api
 """
 api_router = APIRouter(prefix="/api")
 
+
 # Mount all routers under the /api router
 api_router.include_router(auth_router.router)
 api_router.include_router(properties_router.router)
@@ -277,6 +367,13 @@ api_router.include_router(leases_router.router)
 api_router.include_router(invoices_router.router)
 api_router.include_router(maintenance_router.router)
 api_router.include_router(reports_router.router)
+
+
+# Register click logger router at root (not under /api)
+from .core.click_logger import router as click_logger_router
+from .core.frontend_error_logger import router as frontend_error_logger_router
+app.include_router(click_logger_router)
+app.include_router(frontend_error_logger_router)
 
 # Mount the API router
 app.include_router(api_router)

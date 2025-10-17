@@ -1,3 +1,15 @@
+from backend.app.core.logging_config import get_logger, log_exception
+
+ai_logger = get_logger('app')
+
+def log_ai_event(msg):
+    ai_logger.info(msg)
+
+def log_ai_error(msg, exc=None):
+    if exc:
+        log_exception(ai_logger, msg, exc)
+    else:
+        ai_logger.error(msg)
 import json
 import traceback
 import logging

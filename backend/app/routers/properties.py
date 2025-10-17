@@ -1,3 +1,15 @@
+from backend.app.core.logging_config import get_logger, log_exception
+
+api_logger = get_logger('api')
+
+def log_property_event(msg):
+    api_logger.info(msg)
+
+def log_property_error(msg, exc=None):
+    if exc:
+        log_exception(api_logger, msg, exc)
+    else:
+        api_logger.error(msg)
 import os
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request, Depends
 from typing import List, Optional

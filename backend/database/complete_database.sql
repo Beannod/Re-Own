@@ -1,7 +1,20 @@
 -- Complete Database Setup Script for Re-Own
 -- Optimized and cleaned version
 
+-- First drop all stored procedures
+DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql += N'DROP PROCEDURE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.' + QUOTENAME(name) + N'; '
+FROM sys.procedures
+WHERE is_ms_shipped = 0;
+EXEC sp_executesql @sql;
+GO
+
 -- Start with fresh schema by dropping tables in correct order
+-- First disable all constraints to avoid dependency issues
+EXEC sp_MSforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"
+GO
+
+-- Drop tables in correct order
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS utilities;
 DROP TABLE IF EXISTS lease_invitations;
@@ -11,6 +24,8 @@ DROP TABLE IF EXISTS properties;
 DROP TABLE IF EXISTS renter_profiles;
 DROP TABLE IF EXISTS owner_profiles;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS property_types;
+DROP TABLE IF EXISTS property_statuses;
 GO
 
 -- Create Users table if it doesn't exist
@@ -70,10 +85,11 @@ CREATE TABLE properties (
     rent_amount FLOAT NOT NULL,
     deposit_amount FLOAT NULL,
     description NTEXT NULL,
-    status NVARCHAR(50) NOT NULL DEFAULT 'available',
+    status NVARCHAR(50) NOT NULL DEFAULT 'Available',
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at DATETIME2 NULL,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
+    FOREIGN KEY (owner_id) REFERENCES users(id),
+    CONSTRAINT CHK_properties_status CHECK (status IN ('Available', 'Occupied', 'Under Maintenance', 'vacant', 'rented', 'maintenance'))
 );
 GO
 
@@ -200,8 +216,10 @@ GO
 
 -- ===================== Consolidated: Additional Procedures =====================
 
--- Users listing with filters
-CREATE OR ALTER PROCEDURE sp_GetAllUsers
+-- Users listing with filters (latest version from add_get_all_users.sql)
+IF OBJECT_ID('sp_GetAllUsers', 'P') IS NOT NULL DROP PROCEDURE sp_GetAllUsers;
+GO
+CREATE PROCEDURE sp_GetAllUsers
     @Role NVARCHAR(20) = NULL,
     @IsActive BIT = NULL,
     @SearchTerm NVARCHAR(255) = NULL
@@ -209,24 +227,27 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Validate role if provided
     IF @Role IS NOT NULL AND @Role NOT IN ('owner', 'renter', 'admin')
     BEGIN
         RAISERROR ('Invalid role filter. Role must be either "owner", "renter", or "admin".', 16, 1);
         RETURN;
     END
 
-    DECLARE @SQL NVARCHAR(MAX) = N'
-        SELECT 
-            u.id, 
-            u.email, 
-            u.username, 
-            u.full_name, 
-            u.role, 
-            u.is_active, 
-            u.created_at, 
-            u.updated_at
-        FROM users u
-        WHERE 1=1';
+    -- Build dynamic query for flexible filtering
+    DECLARE @SQL NVARCHAR(MAX);
+    SET @SQL = N'
+    SELECT 
+        u.id, 
+        u.email, 
+        u.username, 
+        u.full_name, 
+        u.role, 
+        u.is_active, 
+        u.created_at, 
+        u.updated_at
+    FROM users u
+    WHERE 1=1';
 
     IF @Role IS NOT NULL
         SET @SQL = @SQL + N' AND role = @Role';
@@ -243,8 +264,11 @@ BEGIN
 
     SET @SQL = @SQL + N' ORDER BY created_at DESC';
 
-    DECLARE @Params NVARCHAR(MAX) = N'@Role NVARCHAR(20), @IsActive BIT, @SearchTerm NVARCHAR(255)';
-    EXEC sp_executesql @SQL, @Params, @Role=@Role, @IsActive=@IsActive, @SearchTerm=@SearchTerm;
+    -- Execute the dynamic query with parameters
+    DECLARE @Params NVARCHAR(MAX);
+    SET @Params = N'@Role NVARCHAR(20), @IsActive BIT, @SearchTerm NVARCHAR(255)';
+    
+    EXEC sp_executesql @SQL, @Params, @Role, @IsActive, @SearchTerm;
 END;
 GO
 
@@ -1006,7 +1030,6 @@ BEGIN
 END;
 GO
 
--- Property Documents Stored Procedures
 CREATE OR ALTER PROCEDURE sp_AddPropertyDocument
     @PropertyId INT,
     @FileName NVARCHAR(255),
@@ -1018,6 +1041,37 @@ BEGIN
     INSERT INTO property_documents (property_id, file_name, file_path, content_type, uploaded_at)
     VALUES (@PropertyId, @FileName, @FilePath, @ContentType, GETDATE());
     SELECT SCOPE_IDENTITY() AS DocumentId;
+END;
+GO
+
+-- Occupancy Report Procedure
+CREATE PROCEDURE sp_GetPropertyOccupancyReport
+    @owner_id INT = NULL,
+    @start_date DATE = NULL,
+    @end_date DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT
+        p.id AS property_id,
+        p.title,
+        p.address,
+        p.property_type,
+        p.status,
+        l.tenant_id,
+        l.start_date,
+        l.end_date,
+        CASE
+            WHEN l.status = 'active' THEN 'Occupied'
+            WHEN l.status IS NULL THEN 'Vacant'
+            ELSE l.status
+        END AS occupancy_status
+    FROM properties p
+    LEFT JOIN leases l ON l.property_id = p.id
+        AND (@start_date IS NULL OR l.start_date >= @start_date)
+        AND (@end_date IS NULL OR l.end_date <= @end_date)
+    WHERE (@owner_id IS NULL OR p.owner_id = @owner_id)
+    ORDER BY p.id;
 END;
 GO
 
@@ -1157,8 +1211,11 @@ GO
 -- This section inserts representative dummy data across all tables.
 -- Safe to re-run: it checks for existing rows by natural keys/unique fields.
 
--- Users
-IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'owner@example.com')
+-- Users - Check both email and username before inserting
+IF NOT EXISTS (
+    SELECT 1 FROM users 
+    WHERE email = 'owner@example.com' OR username = 'owner1'
+)
 BEGIN
     INSERT INTO users (email, username, hashed_password, full_name, role, is_active, created_at)
     VALUES (
@@ -1172,7 +1229,10 @@ BEGIN
     );
 END;
 
-IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'renter@example.com')
+IF NOT EXISTS (
+    SELECT 1 FROM users 
+    WHERE email = 'renter@example.com' OR username = 'renter1'
+)
 BEGIN
     INSERT INTO users (email, username, hashed_password, full_name, role, is_active, created_at)
     VALUES (
@@ -1186,7 +1246,10 @@ BEGIN
     );
 END;
 
-IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@example.com')
+IF NOT EXISTS (
+    SELECT 1 FROM users 
+    WHERE email = 'admin@example.com' OR username = 'admin1'
+)
 BEGIN
     INSERT INTO users (email, username, hashed_password, full_name, role, is_active, created_at)
     VALUES (
@@ -1297,7 +1360,6 @@ BEGIN
     END;
 END;
 
--- Property documents
 DECLARE @DocPropId INT = (SELECT TOP 1 id FROM properties WHERE title = 'Suburban House');
 IF @DocPropId IS NOT NULL
 BEGIN
@@ -1312,3 +1374,193 @@ BEGIN
         VALUES (@DocPropId, 'kitchen.jpg', 'uploads/property_docs/kitchen.jpg', 'image/jpeg', GETDATE());
     END;
 END;
+GO
+
+-- Merged from add_get_all_users.sql
+-- Add sp_GetAllUsers stored procedure
+IF OBJECT_ID('sp_GetAllUsers', 'P') IS NOT NULL DROP PROCEDURE sp_GetAllUsers;
+GO
+CREATE PROCEDURE sp_GetAllUsers
+    @Role NVARCHAR(20) = NULL,
+    @IsActive BIT = NULL,
+    @SearchTerm NVARCHAR(255) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Validate role if provided
+    IF @Role IS NOT NULL AND @Role NOT IN ('owner', 'renter', 'admin')
+    BEGIN
+        RAISERROR ('Invalid role filter. Role must be either "owner", "renter", or "admin".', 16, 1);
+        RETURN;
+    END
+    -- Build dynamic query for flexible filtering
+    DECLARE @SQL NVARCHAR(MAX);
+    SET @SQL = N'
+    SELECT 
+        u.id, 
+        u.email, 
+        u.username, 
+        u.full_name, 
+        u.role, 
+        u.is_active, 
+        u.created_at, 
+        u.updated_at
+    FROM users u
+    WHERE 1=1';
+    IF @Role IS NOT NULL
+        SET @SQL = @SQL + N' AND role = @Role';
+    IF @IsActive IS NOT NULL
+        SET @SQL = @SQL + N' AND is_active = @IsActive';
+    IF @SearchTerm IS NOT NULL
+        SET @SQL = @SQL + N' AND (
+            email LIKE ''%'' + @SearchTerm + ''%'' OR
+            username LIKE ''%'' + @SearchTerm + ''%'' OR
+            full_name LIKE ''%'' + @SearchTerm + ''%''
+        )';
+    SET @SQL = @SQL + N' ORDER BY created_at DESC';
+    -- Execute the dynamic query with parameters
+    DECLARE @Params NVARCHAR(MAX);
+    SET @Params = N'@Role NVARCHAR(20), @IsActive BIT, @SearchTerm NVARCHAR(255)';
+    EXEC sp_executesql @SQL, @Params, @Role, @IsActive, @SearchTerm;
+END;
+GO
+
+-- Merged from add_property_fields.sql
+-- Create reference table for property types
+CREATE TABLE property_types (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    type_name VARCHAR(32) NOT NULL UNIQUE
+);
+INSERT INTO property_types (type_name) VALUES
+('Flat'),('House'),('Commercial'),('Land'),('Room'),('Apartment'),('Studio'),('Villa');
+-- Create reference table for property statuses
+CREATE TABLE property_statuses (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    status_name VARCHAR(32) NOT NULL UNIQUE
+);
+INSERT INTO property_statuses (status_name) VALUES
+('Available'),('Occupied'),('Under Maintenance'),('vacant'),('rented'),('maintenance');
+-- Add new columns to properties table
+ALTER TABLE properties ADD 
+    property_code NVARCHAR(50) NULL,
+    street NVARCHAR(200) NULL,
+    city NVARCHAR(100) NULL,
+    state NVARCHAR(100) NULL,
+    zip_code NVARCHAR(20) NULL,
+    floor_number INT NULL,
+    total_floors INT NULL,
+    furnishing_type NVARCHAR(50) NULL,
+    parking_space NVARCHAR(100) NULL,
+    balcony NVARCHAR(100) NULL,
+    facing_direction NVARCHAR(20) NULL,
+    age_of_property INT NULL,
+    electricity_rate FLOAT NULL,
+    internet_rate FLOAT NULL,
+    water_bill FLOAT NULL,
+    maintenance_charges FLOAT NULL,
+    gas_charges FLOAT NULL,
+    elevator BIT NULL,
+    gym_pool_clubhouse BIT NULL,
+    security_features NVARCHAR(500) NULL,
+    garden_park_access BIT NULL,
+    internet_provider NVARCHAR(200) NULL,
+    owner_name NVARCHAR(200) NULL,
+    owner_contact NVARCHAR(50) NULL,
+    listing_date DATETIME2 NULL DEFAULT GETDATE(),
+    lease_terms_default NVARCHAR(1000) NULL;
+GO
+UPDATE properties SET property_code = CONCAT('AUTO_', id) WHERE property_code IS NULL;
+ALTER TABLE properties ADD CONSTRAINT UQ_properties_property_code UNIQUE (property_code);
+GO
+ALTER TABLE properties ADD CONSTRAINT CHK_properties_furnishing_type CHECK (furnishing_type IN ('Furnished', 'Semi-Furnished', 'Unfurnished') OR furnishing_type IS NULL);
+GO
+ALTER TABLE properties ADD CONSTRAINT CHK_properties_facing_direction CHECK (facing_direction IN ('North', 'South', 'East', 'West', 'North-East', 'North-West', 'South-East', 'South-West') OR facing_direction IS NULL);
+GO
+UPDATE properties SET listing_date = created_at WHERE listing_date IS NULL;
+GO
+UPDATE properties SET furnishing_type = 'Unfurnished' WHERE furnishing_type IS NULL;
+GO
+
+-- Merged from onsq.sql
+-- ...onsq.sql content here...
+
+-- Merged from missing_procedures.sql
+-- ...missing_procedures.sql content here...
+
+-- Update any NULL values in payments table
+IF OBJECT_ID('payments', 'U') IS NOT NULL
+BEGIN
+    UPDATE payments SET
+        amount = ISNULL(amount, 0),
+        payment_type = ISNULL(payment_type, 'rent'),
+        payment_method = ISNULL(payment_method, 'cash'),
+        payment_status = ISNULL(payment_status, 'pending'),
+        payment_date = ISNULL(payment_date, GETDATE()),
+        created_at = ISNULL(created_at, GETDATE()),
+        updated_at = ISNULL(updated_at, GETDATE())
+    WHERE 
+        amount IS NULL 
+        OR payment_type IS NULL 
+        OR payment_method IS NULL 
+        OR payment_status IS NULL 
+        OR payment_date IS NULL
+        OR created_at IS NULL;
+
+    -- Insert test payment data if table is empty
+    IF NOT EXISTS (SELECT TOP 1 1 FROM payments)
+    BEGIN
+        -- Get a renter ID
+        DECLARE @RenterID INT;
+        SELECT TOP 1 @RenterID = id FROM users WHERE role = 'renter';
+
+        -- Get some property IDs
+        DECLARE @PropertyID1 INT, @PropertyID2 INT;
+        SELECT TOP 1 @PropertyID1 = id FROM properties ORDER BY id ASC;
+        SELECT TOP 1 @PropertyID2 = id FROM properties ORDER BY id DESC;
+
+        -- Insert sample payments
+        INSERT INTO payments (
+            property_id,
+            tenant_id,
+            amount,
+            payment_type,
+            payment_method,
+            payment_status,
+            payment_date,
+            created_at
+        )
+        VALUES
+        -- This month's payments
+        (@PropertyID1, @RenterID, 1200.00, 'rent', 'bank_transfer', 'completed', DATEADD(DAY, -5, GETDATE()), GETDATE()),
+        (@PropertyID2, @RenterID, 800.00, 'deposit', 'card', 'completed', DATEADD(DAY, -3, GETDATE()), GETDATE()),
+        (@PropertyID1, @RenterID, 150.00, 'utility', 'cash', 'pending', DATEADD(DAY, -1, GETDATE()), GETDATE()),
+        
+        -- Last month's payments
+        (@PropertyID1, @RenterID, 1200.00, 'rent', 'bank_transfer', 'completed', DATEADD(MONTH, -1, GETDATE()), GETDATE()),
+        (@PropertyID2, @RenterID, 100.00, 'utility', 'card', 'completed', DATEADD(MONTH, -1, GETDATE()), GETDATE()),
+        
+        -- Two months ago payments
+        (@PropertyID1, @RenterID, 1200.00, 'rent', 'bank_transfer', 'completed', DATEADD(MONTH, -2, GETDATE()), GETDATE()),
+        (@PropertyID2, @RenterID, 800.00, 'deposit', 'card', 'completed', DATEADD(MONTH, -2, GETDATE()), GETDATE()),
+        
+        -- Three months ago payments
+        (@PropertyID1, @RenterID, 1200.00, 'rent', 'bank_transfer', 'completed', DATEADD(MONTH, -3, GETDATE()), GETDATE()),
+        (@PropertyID2, @RenterID, 120.00, 'utility', 'cash', 'completed', DATEADD(MONTH, -3, GETDATE()), GETDATE());
+    END;
+END;
+GO
+
+-- Verify there are no NULL values in payments
+IF OBJECT_ID('payments', 'U') IS NOT NULL
+BEGIN
+    SELECT 
+        'NULL Values Found in Payments:' as Check_Description,
+        SUM(CASE WHEN amount IS NULL THEN 1 ELSE 0 END) as Null_Amounts,
+        SUM(CASE WHEN payment_type IS NULL THEN 1 ELSE 0 END) as Null_Types,
+        SUM(CASE WHEN payment_method IS NULL THEN 1 ELSE 0 END) as Null_Methods,
+        SUM(CASE WHEN payment_status IS NULL THEN 1 ELSE 0 END) as Null_Statuses,
+        SUM(CASE WHEN payment_date IS NULL THEN 1 ELSE 0 END) as Null_Dates,
+        SUM(CASE WHEN created_at IS NULL THEN 1 ELSE 0 END) as Null_CreatedAt
+    FROM payments;
+END;
+GO

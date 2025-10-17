@@ -1,3 +1,15 @@
+from backend.app.core.logging_config import get_logger, log_exception
+
+security_logger = get_logger('security')
+
+def log_security_event(msg):
+    security_logger.info(msg)
+
+def log_security_error(msg, exc=None):
+    if exc:
+        log_exception(security_logger, msg, exc)
+    else:
+        security_logger.error(msg)
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt

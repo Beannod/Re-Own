@@ -645,9 +645,9 @@ class StoredProcedures:
         )
 
     @staticmethod
-    def get_payment_collection_report(owner_id=None, start_date=None, end_date=None):
+    def get_payment_report(owner_id=None, start_date=None, end_date=None):
         return StoredProcedures.execute_sp(
-            "sp_GetPaymentCollectionReport",
+            "sp_GetPaymentReport",
             [owner_id, start_date, end_date]
         )
 

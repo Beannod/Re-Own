@@ -100,6 +100,97 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Compact Property Modal Styles */
+.compact-property-modal {
+  font-size: 0.85rem !important;
+}
+
+.compact-property-modal .swal2-html-container {
+  padding: 0.5rem !important;
+  margin: 0 !important;
+}
+
+.compact-property-modal .form-control-sm,
+.compact-property-modal .form-select-sm {
+  font-size: 0.8rem !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  border-radius: 4px !important;
+}
+
+.compact-property-modal label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 2px !important;
+  color: #374151 !important;
+}
+
+.compact-property-modal .row {
+  margin: 0 !important;
+}
+
+.compact-property-modal .col-1,
+.compact-property-modal .col-2,
+.compact-property-modal .col-3,
+.compact-property-modal .col-4,
+.compact-property-modal .col-5,
+.compact-property-modal .col-6,
+.compact-property-modal .col-7,
+.compact-property-modal .col-8,
+.compact-property-modal .col-9,
+.compact-property-modal .col-10,
+.compact-property-modal .col-11,
+.compact-property-modal .col-12 {
+  padding: 2px 4px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Section Headers in Property Form */
+.compact-property-modal .section-header {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  margin: 8px 0 6px 0 !important;
+  border-left: 4px solid #00bfa5 !important;
+}
+
+.compact-property-modal .section-header h6 {
+  color: #495057 !important;
+  margin: 0 !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Compact button styling */
+.compact-property-modal .swal2-confirm,
+.compact-property-modal .swal2-cancel {
+  font-size: 0.85rem !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+}
+
+/* Scrollbar styling for modal */
+.compact-property-modal .swal2-html-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.compact-property-modal .swal2-html-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.compact-property-modal .swal2-html-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.compact-property-modal .swal2-html-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* Action Buttons Color Coding */
 .action-assign-property {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
