@@ -1,5 +1,5 @@
 (function(){
-  function checkAuthAndRedirectToLogin() {
+  async function checkAuthAndRedirectToLogin() {
     // Check if user is already authenticated and trying to access login
     const token = localStorage.getItem(CONFIG.TOKEN_KEY);
     if (token) {
@@ -7,69 +7,98 @@
       const payload = Util.decodeJWT(token);
       if (payload && payload.role) {
         const role = payload.role;
-        
+
         // Show message and redirect based on role
         if (window.Swal) {
-          Swal.fire({
-            icon: 'info',
-            title: 'Already Signed In',
-            text: 'You are already logged in. What would you like to do?',
-            showCancelButton: true,
-            showDenyButton: true,
-            confirmButtonText: 'Show Dashboard',
-            denyButtonText: 'Sign Out',
-            cancelButtonText: 'Stay Here'
-          }).then((result) => {
-            if (result.isConfirmed) {
+          try {
+            const result = await Swal.fire({
+              icon: 'info',
+              title: 'Already Signed In',
+              text: 'You are already logged in. What would you like to do?',
+              showCancelButton: true,
+              showDenyButton: true,
+              confirmButtonText: 'Show Dashboard',
+              denyButtonText: 'Sign Out',
+              cancelButtonText: 'Stay Here'
+            });
+
+            if (result && result.isConfirmed) {
               if (role === 'owner') {
                 window.location.href = 'owner.html';
               } else {
                 window.location.href = 'renter.html';
               }
-            } else if (result.isDenied) {
-              // Sign out user
+            } else if (result && result.isDenied) {
+              // Sign out user properly
+              try {
+                await API.logout();
+              } catch (e) {
+                console.warn('Logout API call failed:', e);
+              }
               localStorage.removeItem(CONFIG.TOKEN_KEY);
               localStorage.removeItem('reown_session_id');
-              Swal.fire({
-                icon: 'success',
-                title: 'Signed Out',
-                text: 'You have been signed out successfully.',
-                timer: 1500,
-                showConfirmButton: false
-              });
-            }
-          });
-        } else {
-          // Fallback without SweetAlert
-          const choice = prompt('You are already signed in. Choose:\n1. Go to Dashboard\n2. Sign Out\n3. Stay Here\n\nEnter 1, 2, or 3:');
-          if (choice === '1') {
-            if (role === 'owner') {
-              window.location.href = 'owner.html';
-            } else {
-              window.location.href = 'renter.html';
-            }
-          } else if (choice === '2') {
-            localStorage.removeItem(CONFIG.TOKEN_KEY);
-            localStorage.removeItem('reown_session_id');
-            alert('You have been signed out successfully.');
-          }
-        }
-        return true;
-      } else {
-        // Token is invalid, remove it
-        localStorage.removeItem(CONFIG.TOKEN_KEY);
-      }
-    }
-    return false;
-  }
 
-  function interceptLoginLinks() {
-    // Intercept clicks on login/signup buttons for authenticated users
+              try {
+                const result = await Swal.fire({
+                  icon: 'info',
+                  title: 'Already Signed In',
+                  html: 'You are already logged in. What would you like to do?<br/><small class="text-muted">You can also <a href="#" id="sw-switch-account">switch account</a> to log in with a different user.</small>',
+                  showCancelButton: true,
+                  showDenyButton: true,
+                  confirmButtonText: 'Go to Dashboard',
+                  denyButtonText: 'Sign Out',
+                  cancelButtonText: 'Stay Here',
+                  willOpen: () => {
+                    const el = document.getElementById('sw-switch-account');
+                    if (el) {
+                      el.addEventListener('click', async (ev) => {
+                        ev.preventDefault();
+                        try { await API.logout(); } catch (e) { /* ignore */ }
+                        localStorage.removeItem(CONFIG.TOKEN_KEY);
+                        localStorage.removeItem('reown_session_id');
+                        window.location.href = 'login.html#login';
+                      });
+                    }
+                  }
+                });
+
+                if (result && result.isConfirmed) {
+                  if (role === 'owner') {
+                    window.location.href = 'owner.html';
+                  } else {
+                    window.location.href = 'renter.html';
+                  }
+                } else if (result && result.isDenied) {
+                  // Sign out user properly
+                  try {
+                    await API.logout();
+                  } catch (e) {
+                    console.warn('Logout API call failed:', e);
+                  }
+                  localStorage.removeItem(CONFIG.TOKEN_KEY);
+                  localStorage.removeItem('reown_session_id');
+                  await Swal.fire({
+                    icon: 'success',
+                    title: 'Signed Out',
+                    text: 'You have been signed out successfully.',
+                    timer: 1200,
+                    showConfirmButton: false
+                  });
+                  if (window.location.pathname.includes('login.html')) {
+                    window.location.reload();
+                  }
+                }
+              } catch (err) {
+                console.error('Already Signed In dialog failed:', err);
+              }
     const loginButtons = document.querySelectorAll('a[href*="login.html"], a[href*="#register"]');
     loginButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        if (checkAuthAndRedirectToLogin()) {
-          e.preventDefault();
+      button.addEventListener('click', async (e) => {
+        try {
+          const blocked = await checkAuthAndRedirectToLogin();
+          if (blocked) e.preventDefault();
+        } catch (err) {
+          console.error('Auth redirect check failed:', err);
         }
       });
     });

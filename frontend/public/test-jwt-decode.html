@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test JWT Decode</title>
+    <style>
+        body { font-family: monospace; background: #222; color: #0f0; padding: 20px; }
+        pre { background: #111; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Test JWT Decoding</h1>
+    <pre id="output"></pre>
+    
+    <script src="js/util.js"></script>
+    <script>
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvd25lcjJAZXhhbXBsZS5jb20iLCJ1c2VyX2lkIjoxNjA0LCJyb2xlIjoib3duZXIiLCJzaWQiOiI5ZGU0OTA3NDhmNmM0NTM2ODIxMDc3MjIyNTVlY2EzYyIsImV4cCI6MTc2MzU3NDExNX0.0gHMY1dUzl-T-PkrlSAQMFO6HEhx8yqWOUbifsXTLDk";
+        
+        const out = document.getElementById('output');
+        
+        out.innerHTML += "Token (first 50 chars): " + token.substring(0, 50) + "\n\n";
+        
+        const decoded = Util.decodeJWT(token);
+        out.innerHTML += "Decoded result: " + JSON.stringify(decoded, null, 2) + "\n\n";
+        
+        if (decoded && decoded.role) {
+            out.innerHTML += "Role found: " + decoded.role + "\n";
+            out.innerHTML += "Would redirect to: " + (decoded.role === 'owner' ? 'owner.html' : 'renter.html') + "\n";
+        } else {
+            out.innerHTML += "ERROR: Role not found in token!\n";
+        }
+    </script>
+</body>
+</html>

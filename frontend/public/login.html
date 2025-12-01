@@ -42,19 +42,14 @@
             </div>
         </div>
     </nav>
-    <div class="container d-flex align-items-center justify-content-center" style="min-height:100vh;">
+    <div id="login" class="container d-flex align-items-center justify-content-center" style="min-height:100vh;">
         <div class="auth-card shadow-lg rounded-4 bg-white p-4 p-md-5" style="width:100%; max-width: 480px;">
             <div class="text-center mb-4">
                 <div class="h3 fw-bold mb-1"><i class="fa-solid fa-house-chimney me-2 text-primary"></i>Re-Own</div>
                 <div class="text-muted">Welcome back — sign in or create your account</div>
             </div>
 
-                <!-- Footer with Logout -->
-                <footer class="text-center py-3" style="position:fixed; left:0; right:0; bottom:0;">
-                    <div class="container small text-muted">
-                        <button class="btn btn-sm btn-outline-secondary logout-btn" type="button">Log out</button>
-                    </div>
-                </footer>
+                <!-- Removed obsolete login page logout footer: sign out available via SweetAlert dialog when already authenticated -->
 
             <!-- Login Form (default visible) -->
             <div id="login-panel" class="auth-panel">
@@ -121,14 +116,297 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/landing-page.js"></script>
+    <script src="js/error-logger.js"></script>
+    <script src="js/landing.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/util.js"></script>
-    <script src="js/debug.js"></script>
     <script src="js/api.js"></script>
+    <!-- Temporary test token injector: visit login.html?testToken=1 or login.html#autotest -->
+    <script>
+        (function(){
+            try {
+                const shouldInject = window.location.search.includes('testToken=1') || window.location.hash.includes('autotest');
+                if (!shouldInject) return;
+                // Ensure CONFIG is available
+                if (typeof CONFIG === 'undefined' || !CONFIG.TOKEN_KEY) {
+                    console.warn('CONFIG not ready; test token injection skipped');
+                    return;
+                }
+
+                function b64url(obj) {
+                    const s = JSON.stringify(obj);
+                    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                }
+
+                const header = { alg: 'none', typ: 'JWT' };
+                const payload = {
+                    user_id: 1,
+                    role: 'owner',
+                    sid: 'test-session',
+                    exp: Math.floor(Date.now() / 1000) + 3600
+                };
+                const token = `${b64url(header)}.${b64url(payload)}.`; // unsigned
+                localStorage.setItem(CONFIG.TOKEN_KEY, token);
+                console.info('[TEST TOKEN] Injected test token for local testing:', token);
+            } catch (e) {
+                console.error('Failed to inject test token', e);
+            }
+        })();
+    </script>
     <script src="js/auth.js"></script>
-    <script src="js/site.js"></script>
-    <script src="js/auth-page.js"></script>
+    <script src="js/error-collector.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Auth.init();
+        });
+    </script>
+    <script>
+        // Autotest runner (only when ?autotest= is present). This will programmatically
+        // exercise the 'Already Signed In' dialog choices: confirm (dashboard), deny (sign out), switch (inline link).
+        (function(){
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const mode = params.get('autotest');
+                if (!mode) return;
+
+                const actions = (mode === 'all') ? ['confirm','deny','switch'] : [mode];
+
+                // Helper: safely override navigation to capture targets instead of navigating
+                try {
+                    window.__test_nav = null;
+                    const loc = window.location;
+                    try { loc.__orig_assign = loc.assign; loc.assign = function(u){ window.__test_nav = u; console.log('[autotest] captured assign ->', u); }; } catch(e){console.warn('assign override failed', e);} 
+                    try { loc.__orig_replace = loc.replace; loc.replace = function(u){ window.__test_nav = u; console.log('[autotest] captured replace ->', u); }; } catch(e){console.warn('replace override failed', e);} 
+                    try { Object.defineProperty(loc, 'href', { set: function(u){ window.__test_nav = u; console.log('[autotest] captured href ->', u); }, configurable: true }); } catch(e){ console.warn('href setter override failed', e); }
+                } catch (e) { console.warn('Navigation overrides failed', e); }
+
+                // Stub API.logout to avoid network dependency
+                if (window.API && typeof window.API.logout === 'function') {
+                    window.__orig_api_logout = window.API.logout;
+                    window.API.logout = async function(){ console.log('[autotest] stubbed API.logout'); return { ok: true }; };
+                }
+
+                async function runAction(action){
+                    // Ensure token is present before each run
+                    if (typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY) {
+                        // reuse earlier injected token if present, otherwise inject a test token
+                        if (!localStorage.getItem(CONFIG.TOKEN_KEY)) {
+                            const header = { alg: 'none', typ: 'JWT' };
+                            const payload = { user_id:1, role:'owner', sid:'test-session', exp: Math.floor(Date.now()/1000) + 3600 };
+                            function b64url(obj){ return btoa(JSON.stringify(obj)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+                            localStorage.setItem(CONFIG.TOKEN_KEY, `${b64url(header)}.${b64url(payload)}.`);
+                        }
+                    }
+
+                    window.__test_nav = null;
+                    console.log('[autotest] running action', action);
+
+                    // Trigger the dialog by calling Auth.checkAuthStatus() directly (it's async)
+                    try {
+                        await Auth.checkAuthStatus();
+                    } catch (e) { console.warn('[autotest] checkAuthStatus error', e); }
+
+                    // Wait for Swal popup
+                    let attempts = 0;
+                    while (!window.Swal || !Swal.getPopup()) {
+                        await new Promise(r => setTimeout(r, 150));
+                        attempts++;
+                        if (attempts > 40) { console.warn('[autotest] popup not found'); break; }
+                    }
+
+                    await new Promise(r => setTimeout(r, 200));
+
+                    try {
+                        if (action === 'confirm') {
+                            if (Swal.clickConfirm) Swal.clickConfirm();
+                            else if (Swal.getConfirmButton) Swal.getConfirmButton().click();
+                        } else if (action === 'deny') {
+                            if (Swal.clickDeny) Swal.clickDeny();
+                            else if (Swal.getDenyButton) Swal.getDenyButton().click();
+                        } else if (action === 'switch') {
+                            // Click the inline 'switch account' link if present
+                            const link = document.getElementById('sw-switch-account');
+                            if (link) link.click();
+                            else if (Swal.getPopup()) {
+                                // try to query inside popup
+                                const popup = Swal.getPopup();
+                                const a = popup.querySelector('#sw-switch-account');
+                                if (a) a.click();
+                            }
+                        }
+                    } catch (e) { console.warn('[autotest] click failed', e); }
+
+                    // Wait for potential handlers to run
+                    await new Promise(r => setTimeout(r, 400));
+
+                    const result = {
+                        action,
+                        capturedNavigation: window.__test_nav,
+                        tokenPresent: !!(typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY && localStorage.getItem(CONFIG.TOKEN_KEY)),
+                    };
+                    console.log('[autotest] result', result);
+                    return result;
+                }
+
+                (async () => {
+                    const results = [];
+                    for (const a of actions) {
+                        // ensure token present before each scenario
+                        if (typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY) {
+                            // leave existing token if present
+                            if (!localStorage.getItem(CONFIG.TOKEN_KEY)) {
+                                const header = { alg: 'none', typ: 'JWT' };
+                                const payload = { user_id:1, role:'owner', sid:'test-session', exp: Math.floor(Date.now()/1000) + 3600 };
+                                function b64url(obj){ return btoa(JSON.stringify(obj)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+                                localStorage.setItem(CONFIG.TOKEN_KEY, `${b64url(header)}.${b64url(payload)}.`);
+                            }
+                        }
+                        const r = await runAction(a);
+                        results.push(r);
+
+                        // Restore token if the action removed it (e.g. deny/switch)
+                        if (typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY && !localStorage.getItem(CONFIG.TOKEN_KEY)) {
+                            const header = { alg: 'none', typ: 'JWT' };
+                            const payload = { user_id:1, role:'owner', sid:'test-session', exp: Math.floor(Date.now()/1000) + 3600 };
+                            function b64url(obj){ return btoa(JSON.stringify(obj)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+                            localStorage.setItem(CONFIG.TOKEN_KEY, `${b64url(header)}.${b64url(payload)}.`);
+                        }
+                        // small delay between actions
+                        await new Promise(r => setTimeout(r, 300));
+                    }
+
+                    console.log('[autotest] all results', results);
+                    alert('Autotest completed. Check console for detailed results.');
+
+                    // Restore original API.logout if stubbed
+                    if (window.__orig_api_logout) window.API.logout = window.__orig_api_logout;
+                })();
+            } catch (e) { console.error('Autotest runner failed', e); }
+        })();
+    </script>
+    <!-- Dev Test Controls Panel (visible when ?dev=1) -->
+    <script>
+        (function(){
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const dev = params.get('dev');
+                if (!dev || dev !== '1') return;
+
+                // Create panel
+                const panel = document.createElement('div');
+                panel.style.position = 'fixed';
+                panel.style.right = '12px';
+                panel.style.top = '12px';
+                panel.style.zIndex = '99999';
+                panel.style.background = 'rgba(255,255,255,0.95)';
+                panel.style.border = '1px solid #ddd';
+                panel.style.padding = '8px';
+                panel.style.borderRadius = '8px';
+                panel.style.width = '220px';
+                panel.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
+
+                const title = document.createElement('div');
+                title.style.fontSize = '13px';
+                title.style.fontWeight = '600';
+                title.style.marginBottom = '6px';
+                title.textContent = 'DEV Test Controls';
+                panel.appendChild(title);
+
+                function addButton(text, onClick) {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-sm btn-outline-secondary';
+                    btn.style.display = 'block';
+                    btn.style.width = '100%';
+                    btn.style.marginBottom = '6px';
+                    btn.textContent = text;
+                    btn.addEventListener('click', onClick);
+                    panel.appendChild(btn);
+                    return btn;
+                }
+
+                // Token helpers
+                function b64url(obj){ return btoa(JSON.stringify(obj)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+                function injectToken(role){
+                    try {
+                        if (typeof CONFIG === 'undefined' || !CONFIG.TOKEN_KEY) {
+                            console.warn('CONFIG not available');
+                            return;
+                        }
+                        const header = { alg: 'none', typ: 'JWT' };
+                        const payload = { user_id: 999, role: role, sid: 'dev-session-'+role, exp: Math.floor(Date.now()/1000) + 3600 };
+                        const token = `${b64url(header)}.${b64url(payload)}.`;
+                        localStorage.setItem(CONFIG.TOKEN_KEY, token);
+                        console.info('[DEV] Injected token for role:', role);
+                        alert('Injected ' + role + ' token');
+                    } catch (e) { console.error('injectToken failed', e); }
+                }
+
+                function clearToken(){
+                    try { if (typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY) localStorage.removeItem(CONFIG.TOKEN_KEY); alert('Cleared token'); } catch(e){console.error(e);} }
+
+                // Autotest trigger: call the existing autotest runner by setting hash and reloading,
+                // or call Auth.checkAuthStatus to open the dialog and then simulate clicks.
+                async function runAutotest(mode){
+                    try {
+                        // ensure token exists
+                        if (typeof CONFIG !== 'undefined' && CONFIG.TOKEN_KEY && !localStorage.getItem(CONFIG.TOKEN_KEY)) {
+                            injectToken('owner');
+                        }
+
+                        // Call Auth.checkAuthStatus to open dialog
+                        if (window.Auth && typeof Auth.checkAuthStatus === 'function') {
+                            await Auth.checkAuthStatus();
+
+                            // Wait briefly for popup
+                            await new Promise(r => setTimeout(r, 200));
+
+                            if (!window.Swal || !Swal.getPopup()) {
+                                console.warn('Popup not found');
+                                return;
+                            }
+
+                            if (mode === 'confirm') {
+                                if (Swal.clickConfirm) Swal.clickConfirm(); else (Swal.getConfirmButton() && Swal.getConfirmButton().click());
+                            } else if (mode === 'deny') {
+                                if (Swal.clickDeny) Swal.clickDeny(); else (Swal.getDenyButton() && Swal.getDenyButton().click());
+                            } else if (mode === 'switch') {
+                                const a = document.getElementById('sw-switch-account') || (Swal.getPopup() && Swal.getPopup().querySelector('#sw-switch-account'));
+                                if (a) a.click(); else console.warn('Switch link not found');
+                            } else if (mode === 'all') {
+                                // sequence: confirm, then restore token, then deny, then restore, then switch
+                                await runAutotest('confirm');
+                                await new Promise(r => setTimeout(r,300));
+                                // restore token
+                                injectToken('owner');
+                                await runAutotest('deny');
+                                await new Promise(r => setTimeout(r,300));
+                                injectToken('owner');
+                                await runAutotest('switch');
+                            }
+                        } else {
+                            // fallback: navigate to self with autotest param
+                            const url = window.location.href.split('?')[0] + '?testToken=1&autotest=' + encodeURIComponent(mode);
+                            window.location.href = url;
+                        }
+                    } catch (e) { console.error('runAutotest failed', e); }
+                }
+
+                addButton('Inject Owner Token', () => injectToken('owner'));
+                addButton('Inject Renter Token', () => injectToken('renter'));
+                addButton('Clear Token', clearToken);
+                addButton('Autotest: Confirm', () => runAutotest('confirm'));
+                addButton('Autotest: Deny(Sign Out)', () => runAutotest('deny'));
+                addButton('Autotest: Switch', () => runAutotest('switch'));
+                addButton('Autotest: All', () => runAutotest('all'));
+
+                document.addEventListener('DOMContentLoaded', () => document.body.appendChild(panel));
+                // expose for console usage
+                window.__dev_injectToken = injectToken;
+                window.__dev_clearToken = clearToken;
+                window.__dev_runAutotest = runAutotest;
+            } catch (e) { console.error('Dev panel failed', e); }
+        })();
+    </script>
 </body>
 </html>

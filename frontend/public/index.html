@@ -1,74 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Re-Own</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="css/index.css" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Re-Own – Simplify Your Property Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/landing.css" />
 </head>
 <body>
-    <div class="container py-5">
-        <div class="row align-items-center mb-5">
-            <div class="col-md-7">
-                <h1 class="mb-3">Re-Own Property Management</h1>
-                <p class="lead">A modern platform to simplify property management for owners and renters.</p>
-                <ul class="list-unstyled mt-3">
-                    <li class="mb-2"><i class="fas fa-lock me-2 text-primary"></i>Secure authentication and role-based access</li>
-                    <li class="mb-2"><i class="fas fa-building me-2 text-primary"></i>Manage properties, payments, and utilities</li>
-                    <li class="mb-2"><i class="fas fa-chart-line me-2 text-primary"></i>Built-in reports and analytics for insights</li>
-                    <li class="mb-2"><i class="fas fa-bolt me-2 text-primary"></i>Fast, reliable, and easy to use</li>
+    <!-- Header / Nav -->
+    <nav id="nav" class="navbar navbar-expand-lg navbar-light fixed-top nav-transparent">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#home">
+                <i class="fa-solid fa-house-chimney me-2"></i> Re-Own
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-controls="navMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#how">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#pricing">Pricing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    <li class="nav-item me-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-sun me-2"></i>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="darkModeToggle" onchange="handleDarkModeToggle()">
+                                <label class="form-check-label" for="darkModeToggle"></label>
+                            </div>
+                            <i class="fas fa-moon ms-2"></i>
+                        </div>
+                    </li>
+                    <li class="nav-item ms-lg-3"><a class="btn btn-brand" href="login.html#register">Sign Up</a></li>
+                    <li class="nav-item ms-2"><a class="btn btn-outline-brand" href="login.html">Login</a></li>
                 </ul>
-                <div class="mt-4">
-                    <a href="login.html" class="btn btn-primary me-2">Login</a>
-                    <a href="login.html#register" class="btn btn-outline-secondary">Create Account</a>
-                </div>
-            </div>
-            <div class="col-md-5">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">How it works</h5>
-                        <ol class="mb-0">
-                            <li>Sign up as an Owner or Renter</li>
-                            <li>Owners add properties and manage tenants</li>
-                            <li>Track payments and utilities in dashboards</li>
-                            <li>View insights from built-in reports</li>
-                        </ol>
-                    </div>
-                </div>
             </div>
         </div>
+    </nav>
 
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-user-shield me-2 text-primary"></i>Owners</h5>
-                        <p class="mb-3">Add and manage properties, tenants, and payment records from a unified dashboard.</p>
-                        <a href="login.html" class="btn btn-sm btn-outline-primary">Go to Owner Dashboard</a>
+    <!-- Hero -->
+    <header id="home" class="hero d-flex align-items-center">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="display-5 fw-bold mb-3">Simplify Your Property Management — All in One Place.</h1>
+                    <p class="lead mb-4">Re-Own helps landlords and tenants manage properties, payments, and utilities effortlessly — backed by real-time analytics.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="login.html#register" class="btn btn-brand btn-lg"><span class="me-2">🌟</span>Get Started Free</a>
+                        <a href="#demo" class="btn btn-outline-light btn-lg"><span class="me-2">▶️</span>Watch Demo</a>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-user me-2 text-primary"></i>Renters</h5>
-                        <p class="mb-3">View your profile and payment history after logging into your account.</p>
-                        <a href="login.html" class="btn btn-sm btn-outline-primary">Go to Renter Dashboard</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-question-circle me-2 text-primary"></i>Need Help?</h5>
-                        <p class="mb-3">Visit the login page to create your account or recover your password.</p>
-                        <a href="login.html" class="btn btn-sm btn-outline-secondary">Get Started</a>
+                <div class="col-lg-5 mt-4 mt-lg-0">
+                    <div class="hero-visual shadow">
+                        <div class="screen-bar"></div>
+                        <div class="screen-body">
+                            <div class="placeholder-chart"></div>
+                            <div class="placeholder-cards">
+                                <div class="card-row"></div>
+                                <div class="card-row"></div>
+                                <div class="card-row"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
+
+    <!-- Features -->
+    <section id="features" class="section py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Why Choose Re-Own</h2>
+                <p class="text-muted">Everything you need to run property operations smoothly.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <a class="card-link" href="owner.html#owner-property">
+                    <div class="feature-card h-100">
+                        <div class="icon mb-3"><i class="fa-solid fa-city"></i></div>
+                        <h5>Smart Property Management</h5>
+                        <p class="text-muted">Add, edit, and organize multiple properties in one place.</p>
+                    </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a class="card-link" href="owner.html#owner-payments">
+                    <div class="feature-card h-100">
+                        <div class="icon mb-3"><i class="fa-solid fa-wallet"></i></div>
+                        <h5>Automated Rent Tracking</h5>
+                        <p class="text-muted">Track rent payments, due dates, and reminders with ease.</p>
+                    </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a class="card-link" href="owner.html#owner-utilities">
+                    <div class="feature-card h-100">
+                        <div class="icon mb-3"><i class="fa-solid fa-bolt"></i></div>
+                        <h5>Utility Monitoring</h5>
+                        <p class="text-muted">Keep an eye on energy and water consumption effortlessly.</p>
+                    </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <a class="card-link" href="owner.html#owner-analytics">
+                    <div class="feature-card h-100">
+                        <div class="icon mb-3"><i class="fa-solid fa-chart-line"></i></div>
+                        <h5>Powerful Analytics</h5>
+                        <p class="text-muted">Analyze income, expenses, and occupancy with visual dashboards.</p>
+                    </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Available Properties -->
+    <section id="available" class="section py-5">
+        <div class="container">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Available Properties</h2>
+                    <p class="text-muted mb-0">Browse listings currently open for rent.</p>
+                </div>
+                <a href="login.html#register" class="btn btn-brand">List Your Property</a>
+            </div>
+            <div id="available-properties" class="row g-3">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how" class="section alt py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">How It Works</h2>
+                <p class="text-muted">Three simple steps to get up and running.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <a class="card-link" href="login.html#register">
+                    <div class="step-card h-100 text-center">
+                        <div class="step-icon mb-3">📝</div>
+                        <h5>Sign Up & Add Property</h5>
+                        <p class="text-muted">Create your free account and register your properties.</p>
+                    </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a class="card-link" href="owner.html#owner-tenant">
+                    <div class="step-card h-100 text-center">
+                        <div class="step-icon mb-3">👥</div>
+                        <h5>Invite Tenants & Automate Payments</h5>
+                        <p class="text-muted">Send invites, set reminders, and collect rent digitally.</p>
+                    </div>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a class="card-link" href="owner.html#owner-analytics">
+                    <div class="step-card h-100 text-center">
+                        <div class="step-icon mb-3">📈</div>
+                        <h5>Track Insights & Reports</h5>
+                        <p class="text-muted">Monitor trends and financial summaries anytime, anywhere.</p>
+                    </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Preview -->
+    <section id="demo" class="section py-5">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6 order-2 order-lg-1">
+                    <div class="mockup shadow-sm"></div>
+                </div>
+                <div class="col-lg-6 order-1 order-lg-2">
+                    <h2 class="fw-bold mb-3">Your Control Center</h2>
+                    <p class="text-muted mb-3">A clean dashboard with payment summaries, analytics charts, and quick actions. Everything at a glance.</p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fa-solid fa-circle-check text-brand me-2"></i>Payment summary</li>
+                        <li class="mb-2"><i class="fa-solid fa-circle-check text-brand me-2"></i>Analytics chart</li>
+                        <li class="mb-2"><i class="fa-solid fa-circle-check text-brand me-2"></i>Property quick actions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="section alt py-5">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6">
+                    <h2 class="fw-bold mb-3">Designed to Deliver Value</h2>
+                    <ul class="list-unstyled lead">
+                        <li class="mb-2">✅ Save time on manual tracking</li>
+                        <li class="mb-2">✅ Reduce missed payments</li>
+                        <li class="mb-2">✅ Centralized control for owners</li>
+                        <li class="mb-2">✅ Transparent records for renters</li>
+                        <li class="mb-2">✅ Secure cloud-based access</li>
+                    </ul>
+                </div>
+                <div class="col-lg-6">
+                    <div class="benefit-visual shadow-sm"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section id="pricing" class="section py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Simple Pricing</h2>
+                <p class="text-muted">Choose a plan that fits your needs.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="price-card h-100 text-center">
+                        <h5 class="mb-1">Free</h5>
+                        <div class="display-6 fw-bold mb-3">₹0</div>
+                        <ul class="list-unstyled text-muted mb-4">
+                            <li>1 Property</li>
+                            <li>Basic Reports</li>
+                        </ul>
+                        <a href="login.html#register" class="btn btn-brand">Start Free Trial</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="price-card featured h-100 text-center">
+                        <div class="badge bg-brand-soft mb-2">Popular</div>
+                        <h5 class="mb-1">Standard</h5>
+                        <div class="display-6 fw-bold mb-3">₹499<span class="fs-6 fw-normal">/mo</span></div>
+                        <ul class="list-unstyled text-muted mb-4">
+                            <li>Up to 10 Properties</li>
+                            <li>Analytics Dashboard</li>
+                        </ul>
+                        <a href="login.html#register" class="btn btn-brand">Start Free Trial</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="price-card h-100 text-center">
+                        <h5 class="mb-1">Premium</h5>
+                        <div class="display-6 fw-bold mb-3">₹999<span class="fs-6 fw-normal">/mo</span></div>
+                        <ul class="list-unstyled text-muted mb-4">
+                            <li>Unlimited Properties</li>
+                            <li>Priority Support & API Access</li>
+                        </ul>
+                        <a href="login.html#register" class="btn btn-brand">Start Free Trial</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section alt py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">What Customers Say</h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="testimonial h-100">
+                        <div class="avatar">A</div>
+                        <blockquote>“Re-Own has made rent collection so much easier — everything in one app!”</blockquote>
+                        <div class="author">— Anil Sharma, Property Owner</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="testimonial h-100">
+                        <div class="avatar">P</div>
+                        <blockquote>“Clean interface and clear reports. I always know what’s due and when.”</blockquote>
+                        <div class="author">— Priya Gupta, Renter</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About -->
+    <section class="section py-5">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-7">
+                    <h2 class="fw-bold mb-3">About Re-Own</h2>
+                    <p class="text-muted">Re-Own was built for modern property owners who want peace of mind. Our mission is to simplify property and tenant management through smart automation and analytics.</p>
+                </div>
+                <div class="col-lg-5">
+                    <div class="about-visual shadow-sm"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="cta text-center py-5">
+        <div class="container">
+            <h3 class="fw-bold mb-3">Ready to take control of your properties?</h3>
+            <a href="login.html#register" class="btn btn-light btn-lg">Get Started for Free</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="footer py-4">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-4">
+                    <div class="fw-bold mb-2"><i class="fa-solid fa-house-chimney me-2"></i>Re-Own</div>
+                    <div class="text-muted">Smarter property management.</div>
+                </div>
+                <div class="col-md-4">
+                    <ul class="list-inline mb-0 text-center">
+                        <li class="list-inline-item"><a href="#home">Home</a></li>
+                        <li class="list-inline-item"><a href="#features">Features</a></li>
+                        <li class="list-inline-item"><a href="#how">How It Works</a></li>
+                        <li class="list-inline-item"><a href="#pricing">Pricing</a></li>
+                        <li class="list-inline-item"><a href="login.html">Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="mb-2"><i class="fa-solid fa-envelope me-2"></i><a href="mailto:info@reown.com">info@reown.com</a></div>
+                    <div class="text-muted">© 2025 Re-Own</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/site.js"></script>
+    <script src="js/landing.js"></script>
+    <script src="js/landing-page.js"></script>
+    <script src="js/error-collector.js"></script>
 </body>
 </html>
+

@@ -49,17 +49,27 @@ class PropertyBase(BaseModel):
 
     @validator('property_type')
     def validate_property_type(cls, v):
-        valid_types = ['Flat', 'House', 'Commercial', 'Land', 'Room', 'Apartment', 'Studio', 'Villa']
+        valid_types = ['Flat', 'House', 'Commercial', 'Land', 'Room', 'Apartment', 'Studio', 'Villa', 'Condo', 'Townhouse']
         if v not in valid_types:
             raise ValueError(f'Property type must be one of: {", ".join(valid_types)}')
         return v
 
     @validator('status')
     def validate_status(cls, v):
+        # Normalize to proper case for consistency
+        status_map = {
+            'available': 'Available',
+            'occupied': 'Occupied', 
+            'under maintenance': 'Under Maintenance',
+            'vacant': 'vacant',
+            'rented': 'rented',
+            'maintenance': 'maintenance'
+        }
+        normalized = status_map.get(v.lower() if v else '', v)
         valid_statuses = ['Available', 'Occupied', 'Under Maintenance', 'vacant', 'rented', 'maintenance']
-        if v not in valid_statuses:
+        if normalized not in valid_statuses:
             raise ValueError(f'Status must be one of: {", ".join(valid_statuses)}')
-        return v
+        return normalized
 
     @validator('furnishing_type')
     def validate_furnishing_type(cls, v):
@@ -90,6 +100,27 @@ class PropertyUpdate(PropertyBase):
     area: Optional[float] = None
     rent_amount: Optional[float] = None
     status: Optional[str] = None
+
+class PropertySummary(BaseModel):
+    """Lightweight property model for list views"""
+    id: int
+    title: str
+    address: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    status: str
+    monthly_rent: float
+    rent_amount: float  # Alias for monthly_rent
+    property_type: str
+    bedrooms: int
+    bathrooms: float
+    area: float
+    owner_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
 
 class Property(PropertyBase):
     id: int

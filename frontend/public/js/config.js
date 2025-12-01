@@ -9,6 +9,7 @@ const ENDPOINTS = {
         LOGIN: '/auth/login',
         REGISTER: '/auth/register',
         LOGOUT: '/auth/logout',
+        OWNER_ANALYTICS: '/auth/owner-analytics'
     },
     PROPERTIES: {
         LIST: '/properties',

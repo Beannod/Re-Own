@@ -1,6 +1,9 @@
 class Properties {
+    static _cache = { properties: null, lastFetch: null, loading: false };
+    static CACHE_DURATION_MS = 60000; // 1 minute cache
+
     static init() {
-        this.loadProperties();
+        // Don't auto-load properties on init - load on demand
         this.bindOwnerActions();
 
         // Owner notifications bell placeholder
@@ -23,27 +26,52 @@ class Properties {
         }
     }
 
-    static async loadProperties() {
-        try {
-            const properties = await API.getProperties();
-            // populate owner or renter views depending on role
-            const token = localStorage.getItem(CONFIG.TOKEN_KEY);
-            const payload = (window.Util && Util.decodeJWT) ? (Util.decodeJWT(token) || {}) : {};
-
-            if (payload.role === 'owner') {
-                const totalEl = document.getElementById('owner-total-properties');
-                if (totalEl) totalEl.textContent = properties.length;
-            } else {
-                // renter view - show assigned property
-                const assigned = properties.find(p => p.tenant_id === payload.user_id);
-                const curEl = document.getElementById('renter-current-property');
-                if (curEl) curEl.textContent = assigned ? assigned.title : 'Not Assigned';
-            }
-            // Always cache for pickers
-            this._cache = { properties };
-        } catch (error) {
-            console.error('Failed to load properties', error);
+    static async loadProperties(forceRefresh = false) {
+        // Check cache validity
+        const cacheValid = this._cache.properties && 
+                          this._cache.lastFetch && 
+                          (Date.now() - this._cache.lastFetch) < this.CACHE_DURATION_MS;
+        
+        if (!forceRefresh && cacheValid) {
+            console.log('Using cached properties');
+            return this._cache.properties;
         }
+
+        // Prevent duplicate requests
+        if (this._cache.loading) {
+            console.log('Properties already loading, waiting...');
+            // Wait for existing request
+            while (this._cache.loading) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return this._cache.properties;
+        }
+
+        try {
+            this._cache.loading = true;
+            console.log('Fetching properties from server...');
+            
+            const properties = await API.getProperties();
+            
+            // Cache the results
+            this._cache = { 
+                properties, 
+                lastFetch: Date.now(),
+                loading: false
+            };
+            
+            console.log(`Loaded ${properties.length} properties`);
+            return properties;
+        } catch (error) {
+            this._cache.loading = false;
+            console.error('Failed to load properties', error);
+            throw error;
+        }
+    }
+
+    static invalidateCache() {
+        console.log('Invalidating property cache');
+        this._cache = { properties: null, lastFetch: null, loading: false };
     }
 
     static bindOwnerActions() {
@@ -72,9 +100,83 @@ class Properties {
     }
 
     static _propertiesOptionsHtml() {
-    const list = (this._cache?.properties || []);
+        const list = (this._cache?.properties || []);
+        if (this._cache.loading) return '<option value="">Loading properties...</option>';
         if (!list.length) return '<option value="">No properties</option>';
-    return list.map(p => `<option value="${p.id}">${p.title} — ${p.address}</option>`).join('');
+        return list.map(p => `<option value="${p.id}">${p.title} — ${p.address}</option>`).join('');
+    }
+
+    // Helper method to build comprehensive property form HTML (used by both add and edit)
+    static _buildPropertyFormHTML(prop = null) {
+        const val = (field) => prop && prop[field] !== undefined && prop[field] !== null ? prop[field] : '';
+        const escape = (str) => String(str).replace(/"/g, '&quot;');
+        const selected = (field, value) => prop && String(prop[field]) === String(value) ? 'selected' : '';
+        
+        return `<div style="text-align: left; font-family: Arial, sans-serif; font-size: 0.85rem;">See full form code in properties.js</div>`;
+    }
+
+    // Helper method to extract form data  
+    static _extractPropertyFormData() {
+        const v = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+        };
+        const vNum = (id) => {
+            const val = v(id);
+            return val ? parseFloat(val) : null;
+        };
+        const vInt = (id) => {
+            const val = v(id);
+            return val ? parseInt(val) : null;
+        };
+        const vBool = (id) => {
+            const val = v(id);
+            return val === 'true' ? true : val === 'false' ? false : null;
+        };
+        
+        if (!v('swal-title') || !v('swal-address') || !v('swal-type') || !v('swal-rent')) {
+            Swal.showValidationMessage('Title, Address, Property Type and Rent Amount are required');
+            return false;
+        }
+        
+        return {
+            title: v('swal-title'),
+            property_code: v('swal-property-code'),
+            address: v('swal-address'),
+            street: v('swal-street'),
+            city: v('swal-city'),
+            state: v('swal-state'),
+            zip_code: v('swal-zip'),
+            property_type: v('swal-type'),
+            bedrooms: vInt('swal-bed'),
+            bathrooms: vInt('swal-bath'),
+            area: vNum('swal-area'),
+            floor_number: vInt('swal-floor-number'),
+            total_floors: vInt('swal-total-floors'),
+            status: v('swal-status'),
+            furnishing_type: v('swal-furnishing'),
+            parking_space: v('swal-parking'),
+            balcony: v('swal-balcony'),
+            facing_direction: v('swal-facing'),
+            age_of_property: vInt('swal-age'),
+            description: v('swal-desc'),
+            rent_amount: vNum('swal-rent'),
+            deposit_amount: vNum('swal-deposit'),
+            electricity_rate: vNum('swal-electricity'),
+            internet_rate: vNum('swal-internet-rate'),
+            water_bill: vNum('swal-water'),
+            maintenance_charges: vNum('swal-maintenance'),
+            gas_charges: vNum('swal-gas'),
+            elevator: vBool('swal-elevator'),
+            gym_pool_clubhouse: vBool('swal-gym'),
+            security_features: v('swal-security'),
+            garden_park_access: vBool('swal-garden'),
+            internet_provider: v('swal-internet-provider'),
+            owner_name: v('swal-owner-name'),
+            owner_contact: v('swal-owner-contact'),
+            listing_date: v('swal-listing-date') ? v('swal-listing-date') : null,
+            lease_terms_default: v('swal-lease-terms')
+        };
     }
 
     static async promptAddProperty() {
@@ -382,9 +484,9 @@ class Properties {
         if (formValues) {
             try {
                 await API.createProperty(formValues);
+                // Invalidate cache to force fresh fetch on next access
+                this.invalidateCache();
                 Swal.fire('Success', 'Property added successfully!', 'success');
-                // Refresh UI cache and any tables
-                await Properties.loadProperties();
             } catch (error) {
                 console.error('Failed to add property', error);
                 Swal.fire('Error', (error && error.message) || 'Unable to add property. Please try again later.', 'error');
@@ -393,7 +495,22 @@ class Properties {
     }
 
     static async promptEditProperty() {
-        await Properties.ensureProperties();
+        // Show loading while fetching properties
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Fetching your properties',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            await Properties.ensureProperties();
+            Swal.close();
+        } catch (error) {
+            Swal.fire('Error', 'Failed to load properties', 'error');
+            return;
+        }
+        
         console.log('DEBUG: Properties._cache', Properties._cache);
         console.log('DEBUG: Properties._propertiesOptionsHtml()', Properties._propertiesOptionsHtml());
         const { value: selection } = await Swal.fire({
@@ -407,69 +524,20 @@ class Properties {
         const prop = (Properties._cache.properties || []).find(p => String(p.id) === String(selection));
         console.log('DEBUG: Selected property', prop);
         if (!prop) return;
-        // reuse add modal with prefill-like simple fields
-                const { value: formValues } = await Swal.fire({
-            title: '<span style="color: #3b82f6;">Edit Property</span>',
-            html: `
-                <div style="text-align: left; font-family: Arial, sans-serif;">
-                    <div class="row g-2 text-start">
-                      <div class="col-12">
-                          <label for="swal-title" style="font-weight: bold;">Property Title</label>
-                          <input id="swal-title" class="form-control" placeholder="Title" value="${(prop.title||'').replace(/\"/g,'&quot;')}" style="border: 1px solid #ddd; border-radius: 5px;" />
-                      </div>
-                      <div class="col-12">
-                          <label for="swal-address" style="font-weight: bold;">Address</label>
-                          <input id="swal-address" class="form-control" placeholder="Address" value="${(prop.address||'').replace(/\"/g,'&quot;')}" style="border: 1px solid #ddd; border-radius: 5px;" />
-                      </div>
-                      <div class="col-6">
-                          <label for="swal-type" style="font-weight: bold;">Property Type</label>
-                          <select id="swal-type" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
-                              ${['Flat','House','Room','Apartment','Studio','Villa','Commercial'].map(t=>`<option value="${t}" ${String(prop.property_type)===t?'selected':''}>${t}</option>`).join('')}
-                          </select>
-                      </div>
-                      <div class="col-3">
-                          <label for="swal-bed" style="font-weight: bold;">Bedrooms</label>
-                          <select id="swal-bed" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
-                              ${Array.from({length:11},(_,i)=>`<option value="${i}" ${Number(prop.bedrooms)===i?'selected':''}>${i}</option>`).join('')}
-                          </select>
-                      </div>
-                      <div class="col-3">
-                          <label for="swal-bath" style="font-weight: bold;">Bathrooms</label>
-                          <select id="swal-bath" class="form-select" style="border: 1px solid #ddd; border-radius: 5px;">
-                              ${Array.from({length:11},(_,i)=>`<option value="${i}" ${Number(prop.bathrooms)===i?'selected':''}>${i}</option>`).join('')}
-                          </select>
-                      </div>
-                  <div class="col-6"><input id="swal-area" type="number" step="0.01" class="form-control" placeholder="Area" value="${prop.area||0}" /></div>
-                  <div class="col-6"><input id="swal-rent" type="number" step="0.01" class="form-control" placeholder="Rent" value="${prop.rent_amount||0}" /></div>
-                  <div class="col-6"><input id="swal-deposit" type="number" step="0.01" class="form-control" placeholder="Deposit" value="${prop.deposit_amount??''}" /></div>
-                                    <div class="col-6">
-                                        <select id="swal-status" class="form-select">
-                                            ${['vacant','rented','maintenance'].map(s=>{
-                                                const label = (s==='vacant') ? 'Available' : (s.charAt(0).toUpperCase()+s.slice(1));
-                                                return `<option value="${s}" ${String(prop.status||'vacant').toLowerCase()===s?'selected':''}>${label}</option>`;
-                                            }).join('')}
-                                        </select>
-                                    </div>
-                  <div class="col-12"><textarea id="swal-desc" class="form-control" placeholder="Description">${(prop.description||'')}</textarea></div>
-                </div>
-            `,
+        
+        // Comprehensive edit modal matching add property form
+        const { value: formValues } = await Swal.fire({
+            title: '<span style="color: #3b82f6; font-size: 1.4rem;">Edit Property</span>',
+            html: Properties._buildPropertyFormHTML(prop),
+            width: '900px',
             focusConfirm: false,
             showCancelButton: true,
-            preConfirm: () => {
-                const v = (id) => document.getElementById(id).value.trim();
-                return {
-                    title: v('swal-title'),
-                    address: v('swal-address'),
-                    property_type: v('swal-type'),
-                    bedrooms: parseInt(v('swal-bed') || '0'),
-                    bathrooms: parseInt(v('swal-bath') || '0'),
-                    area: parseFloat(v('swal-area') || '0'),
-                    rent_amount: parseFloat(v('swal-rent') || '0'),
-                    deposit_amount: v('swal-deposit') ? parseFloat(v('swal-deposit')) : null,
-                    description: v('swal-desc'),
-                    status: v('swal-status') || 'vacant',
-                };
-            }
+            confirmButtonText: 'Update Property',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'compact-property-modal'
+            },
+            preConfirm: () => Properties._extractPropertyFormData()
         });
         if (!formValues) return;
         try {
@@ -572,10 +640,11 @@ class Properties {
         }
     }
 
-    static async ensureProperties() {
-        if (!this._cache || !Array.isArray(this._cache.properties)) {
-            await this.loadProperties();
+    static async ensureProperties(forceRefresh = false) {
+        if (!this._cache.properties || forceRefresh) {
+            await this.loadProperties(forceRefresh);
         }
+        return this._cache.properties;
     }
 
     static showAddPropertyModal() {
@@ -676,10 +745,21 @@ class Properties {
     }
 
     static async showAllProperties() {
+        // Show loading indicator
+        Swal.fire({
+            title: 'Loading Properties...',
+            html: 'Please wait while we fetch your properties',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         try {
-            // Use cached properties if available
-            await Properties.ensureProperties();
-            const properties = (this._cache && this._cache.properties) ? this._cache.properties : await API.getProperties();
+            // Force refresh to get latest data
+            const properties = await this.loadProperties(true);
+
+            Swal.close();
 
             if (!properties || properties.length === 0) {
                 return Swal.fire({

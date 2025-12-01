@@ -92,33 +92,40 @@ def payments(owner_id: Optional[int] = Query(default=None), start_date: Optional
                 "pendingAmount": 0,
                 "averagePayment": 0,
                 "mostCommonType": "rent",
-                "monthlyBreakdown": [],
-                "paymentTypes": []
+                "totalPropertiesWithPayments": 0,
+                "totalPayingTenants": 0,
+                "completedPayments": 0,
+                "pendingPayments": 0,
+                "failedPayments": 0
             })
 
         try:
-            # Get all result sets
+            # Get the summary row from first result set
             summary = results[0][0]  # First row of first result set
-            monthly_breakdown = results[1] if len(results) > 1 else []  # Second result set
-            payment_types = results[2] if len(results) > 2 else []  # Third result set
+            
+            # Convert pyodbc Row to dict for easier access
+            summary_dict = {}
+            for key in summary.cursor_description:
+                col_name = key[0]
+                summary_dict[col_name] = getattr(summary, col_name, None)
 
             return JSONResponse(status_code=200, content={
-                "monthlyRevenue": float(summary.get("monthly_revenue", 0)),
-                "totalPayments": int(summary.get("completed_payments", 0)) + int(summary.get("pending_payments", 0)),
-                "pendingAmount": float(summary.get("pending_amount", 0)),
-                "averagePayment": float(summary.get("average_payment", 0)),
-                "mostCommonType": summary.get("most_common_payment_type", "rent"),
-                "monthlyBreakdown": monthly_breakdown,
-                "paymentTypes": payment_types
+                "monthlyRevenue": float(summary_dict.get("monthly_revenue", 0) or 0),
+                "totalPayments": int(summary_dict.get("completed_payments", 0) or 0) + int(summary_dict.get("pending_payments", 0) or 0),
+                "pendingAmount": float(summary_dict.get("pending_amount", 0) or 0),
+                "averagePayment": float(summary_dict.get("average_payment", 0) or 0),
+                "mostCommonType": summary_dict.get("most_common_payment_type", "rent") or "rent",
+                "totalPropertiesWithPayments": int(summary_dict.get("total_properties_with_payments", 0) or 0),
+                "totalPayingTenants": int(summary_dict.get("total_paying_tenants", 0) or 0),
+                "completedPayments": int(summary_dict.get("completed_payments", 0) or 0),
+                "pendingPayments": int(summary_dict.get("pending_payments", 0) or 0),
+                "failedPayments": int(summary_dict.get("failed_payments", 0) or 0)
             })
-        except KeyError as ke:
-            # Log the error details
-            import logging
-            logging.error(f"Missing key in payment report: {ke}")
-            logging.error(f"Summary data: {summary}")
-            raise Exception(f"Invalid data structure in payment report: {ke}")
         except Exception as e:
+            import logging
             logging.error(f"Error processing payment report: {e}")
+            logging.error(f"Summary object type: {type(summary)}")
+            logging.error(f"Summary object: {summary}")
             raise
     except Exception as e:
         return JSONResponse(status_code=500, content={
@@ -130,10 +137,55 @@ def payments(owner_id: Optional[int] = Query(default=None), start_date: Optional
 
 @router.get("/consumption")
 def consumption(property_id: Optional[int] = Query(default=None), utility_type: Optional[str] = Query(default=None), start_date: Optional[str] = Query(default=None), end_date: Optional[str] = Query(default=None)):
-    """Planned: Utility consumption report (sp_GetUtilityConsumptionReport)."""
-    return JSONResponse(status_code=501, content={
-        "detail": "Not implemented",
-        "code": "NOT_IMPLEMENTED",
-        "hint": "Return utility consumption via sp_GetUtilityConsumptionReport.",
-        "params": {"property_id": property_id, "utility_type": utility_type, "start_date": start_date, "end_date": end_date}
-    })
+    """Return utility consumption report using sp_GetUtilityConsumptionReport."""
+    from ..database import StoredProcedures
+    import datetime
+
+    def parse_date(d):
+        if d is None:
+            return None
+        try:
+            return datetime.datetime.strptime(d, "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    def serialize_date(d):
+        if isinstance(d, (datetime.date, datetime.datetime)):
+            return d.isoformat()
+        return d
+
+    def process_row(row):
+        if not row or not hasattr(row, 'items'):
+            return row
+        processed = {}
+        try:
+            for key, value in row.items():
+                processed[key] = serialize_date(value)
+            return processed
+        except AttributeError:
+            return row
+
+    params = [property_id, utility_type, parse_date(start_date), parse_date(end_date)]
+    try:
+        results = StoredProcedures.get_utility_consumption_report(*params)
+        if not results:
+            return JSONResponse(status_code=200, content={"data": []})
+
+        # Process each row safely
+        serialized_results = []
+        for row in results:
+            try:
+                processed = process_row(row)
+                serialized_results.append(processed)
+            except Exception as e:
+                import logging
+                logging.error(f"Error processing row: {row}, Error: {str(e)}")
+                serialized_results.append(row)  # Include original row if processing fails
+
+        return JSONResponse(status_code=200, content={"data": serialized_results})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "detail": str(e),
+            "code": "CONSUMPTION_REPORT_ERROR",
+            "params": {"property_id": property_id, "utility_type": utility_type, "start_date": start_date, "end_date": end_date}
+        })

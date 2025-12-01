@@ -1,6 +1,8 @@
 class Auth {
     static init() {
         this.bindEvents();
+        this.applyHashPanel();
+        window.addEventListener('hashchange', () => this.applyHashPanel());
         this.checkAuthStatus();
     }
 
@@ -10,12 +12,25 @@ class Auth {
             tab.addEventListener('click', () => this.switchAuthForm(tab.dataset.tab));
         });
 
+        // Support links with class .toggle-auth (present in login.html)
+        document.querySelectorAll('.toggle-auth').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = link.getAttribute('data-switch') || (link.href.includes('#register') ? 'register' : 'login');
+                window.location.hash = `#${target}`;
+                this.switchAuthForm(target);
+            });
+        });
+
         // Handle form submissions
         document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form').addEventListener('submit', (e) => this.handleRegister(e));
 
         // Handle logout
-        document.querySelector('.logout-btn').addEventListener('click', () => this.handleLogout());
+        const logoutBtn = document.querySelector('.logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
     }
 
     static switchAuthForm(tab) {
@@ -25,8 +40,34 @@ class Auth {
         });
 
         // Show selected form
-        document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-        document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+        const lp = document.getElementById('login-panel');
+        const rp = document.getElementById('register-panel');
+        if (lp && rp) {
+            if (tab === 'login') {
+                lp.classList.remove('d-none');
+                rp.classList.add('d-none');
+            } else if (tab === 'register') {
+                rp.classList.remove('d-none');
+                lp.classList.add('d-none');
+            }
+        } else {
+            // Fallback to form-only toggle
+            const lf = document.getElementById('login-form');
+            const rf = document.getElementById('register-form');
+            if (lf && rf) {
+                lf.style.display = tab === 'login' ? 'block' : 'none';
+                rf.style.display = tab === 'register' ? 'block' : 'none';
+            }
+        }
+    }
+
+    static applyHashPanel() {
+        const hash = (window.location.hash || '').toLowerCase();
+        if (hash.includes('register')) {
+            this.switchAuthForm('register');
+        } else {
+            this.switchAuthForm('login');
+        }
     }
 
     static async handleLogin(e) {
@@ -35,8 +76,17 @@ class Auth {
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
 
+        // Log login attempt
+        ErrorLogger.logInfo('Login Attempt', {
+            email: email,
+            timestamp: new Date().toISOString()
+        });
+
         // Basic validation
         if (!email || !password) {
+            ErrorLogger.logWarning('Login Validation Failed', {
+                reason: 'Missing email or password'
+            });
             return Swal.fire({
                 icon: 'warning',
                 title: 'Missing information',
@@ -51,7 +101,16 @@ class Auth {
 
             // Try to read role from token
             const payload = Util.decodeJWT(token);
+            console.log('Token payload:', payload);
             let role = payload && payload.role ? payload.role : null;
+            console.log('Role from token:', role);
+            
+            ErrorLogger.logInfo('Login Successful', {
+                email: email,
+                role: role,
+                hasToken: !!token
+            });
+            
             // Store session id if present
             if (payload && payload.sid) {
                 localStorage.setItem('reown_session_id', payload.sid);
@@ -61,25 +120,50 @@ class Auth {
             if (!role) {
                 try {
                     const profile = await API.request('/auth/me');
+                    console.log('Profile from API:', profile);
                     role = profile.role;
                 } catch (err) {
                     console.warn('Could not fetch profile:', err);
+                    ErrorLogger.logWarning('Could not fetch profile from /auth/me', {
+                        error: err.message
+                    });
+                    // Default to owner if we can't determine role
+                    role = 'owner';
                 }
             }
 
-            // Redirect to appropriate page
-            if (role === 'owner') {
-                window.location.href = 'owner.html';
-            } else {
-                window.location.href = 'renter.html';
-            }
+            console.log('Final role:', role);
+            ErrorLogger.logInfo('Final Role Determined', { role: role });
 
-            Swal.fire({
+            // Show success message then redirect
+            await Swal.fire({
                 icon: 'success',
                 title: 'Welcome back!',
                 showConfirmButton: false,
                 timer: 1200
             });
+
+            // Add small delay to ensure alert is dismissed
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Determine target page
+            const targetPage = role === 'owner' ? 'owner.html' : 'renter.html';
+            console.log('Loading:', targetPage);
+            
+            ErrorLogger.logInfo('Page Load Initiated', {
+                targetPage: targetPage,
+                currentUrl: window.location.href
+            });
+            
+            // Navigate using a normal location change (avoid document.write duplication & parser-blocking warnings)
+            try {
+                ErrorLogger.logInfo('Navigating to page', { targetPage });
+                // Use relative path instead of leading slash to avoid root mismatch in some static hosting contexts
+                window.location.replace(targetPage);
+            } catch (navErr) {
+                console.warn('Primary navigation failed, fallback to href', navErr);
+                window.location.href = targetPage;
+            }
         } catch (error) {
             // Map backend error codes/statuses to friendly messages
             let title = 'Login Failed';
@@ -124,15 +208,25 @@ class Auth {
 
         const userData = { email, username, full_name, role, password };
 
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.textContent : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+        }
         try {
-            await API.register(userData);
-            // Redirect user to login page after successful registration
-            window.location.href = 'login.html';
-            Swal.fire({
+            const result = await API.register(userData);
+            ErrorLogger.logInfo('Registration Successful', { email, role, userId: result && result.id });
+            // Show success feedback first, THEN redirect after short delay so user perceives success.
+            await Swal.fire({
                 icon: 'success',
-                title: 'Registration Successful',
-                text: 'Please login with your credentials'
+                title: 'Account Created',
+                text: 'You can now log in with your credentials.',
+                timer: 1600,
+                showConfirmButton: false
             });
+            // Ensure panels reset to login hash for deep-link consistency
+            try { window.location.replace('login.html#login'); } catch(_) { window.location.href = 'login.html#login'; }
         } catch (error) {
             // Friendly messages for common registration errors
             let title = 'Registration Failed';
@@ -156,6 +250,12 @@ class Auth {
                     break;
             }
             Swal.fire({ icon: 'error', title, text });
+        }
+        finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (originalBtnText) submitBtn.textContent = originalBtnText;
+            }
         }
     }
 
@@ -181,44 +281,71 @@ class Auth {
         return !!this.getAuthToken();
     }
 
-    static checkAuthStatus() {
+    static async checkAuthStatus() {
         if (this.isAuthenticated()) {
             const token = this.getAuthToken();
             const payload = Util.decodeJWT(token);
             const role = payload && payload.role ? payload.role : null;
-            
+
             if (role) {
                 // Show message and redirect to appropriate dashboard
                 if (window.Swal) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Already Signed In',
-                        text: 'You are already logged in. What would you like to do?',
-                        showCancelButton: true,
-                        showDenyButton: true,
-                        confirmButtonText: 'Show Dashboard',
-                        denyButtonText: 'Sign Out',
-                        cancelButtonText: 'Stay Here'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
+                    try {
+                        const result = await Swal.fire({
+                            icon: 'info',
+                            title: 'Already Signed In',
+                            // Use html so we can add a 'Switch Account' inline link
+                            html: 'You are already logged in. What would you like to do?<br/><small class="text-muted">You can also <a href="#" id="sw-switch-account">switch account</a> to log in with a different user.</small>',
+                            showCancelButton: true,
+                            showDenyButton: true,
+                            confirmButtonText: 'Go to Dashboard',
+                            denyButtonText: 'Sign Out',
+                            cancelButtonText: 'Stay Here',
+                            willOpen: () => {
+                                // Attach handler to the inline 'Switch Account' link
+                                const el = document.getElementById('sw-switch-account');
+                                if (el) {
+                                    el.addEventListener('click', async (ev) => {
+                                        ev.preventDefault();
+                                        try { await API.logout(); } catch (e) { /* ignore */ }
+                                        localStorage.removeItem(CONFIG.TOKEN_KEY);
+                                        localStorage.removeItem('reown_session_id');
+                                        // Navigate to login for switching accounts
+                                        window.location.href = 'login.html#login';
+                                    });
+                                }
+                            }
+                        });
+
+                        if (result && result.isConfirmed) {
                             if (role === 'owner') {
                                 window.location.href = 'owner.html';
                             } else {
                                 window.location.href = 'renter.html';
                             }
-                        } else if (result.isDenied) {
-                            // Sign out user
+                        } else if (result && result.isDenied) {
+                            try {
+                                await API.logout();
+                            } catch (e) {
+                                console.warn('Logout API call failed:', e);
+                            }
                             localStorage.removeItem(CONFIG.TOKEN_KEY);
                             localStorage.removeItem('reown_session_id');
-                            Swal.fire({
+
+                            await Swal.fire({
                                 icon: 'success',
                                 title: 'Signed Out',
                                 text: 'You have been signed out successfully.',
-                                timer: 1500,
+                                timer: 1200,
                                 showConfirmButton: false
                             });
+
+                            // Reload the page to show login form
+                            window.location.reload();
                         }
-                    });
+                    } catch (err) {
+                        console.error('Already Signed In dialog failed:', err);
+                    }
                 } else {
                     // Fallback without SweetAlert
                     const choice = prompt('You are already signed in. Choose:\n1. Go to Dashboard\n2. Sign Out\n3. Stay Here\n\nEnter 1, 2, or 3:');
@@ -229,6 +356,9 @@ class Auth {
                             window.location.href = 'renter.html';
                         }
                     } else if (choice === '2') {
+                        try {
+                            await API.logout();
+                        } catch (e) { /* ignore */ }
                         localStorage.removeItem(CONFIG.TOKEN_KEY);
                         localStorage.removeItem('reown_session_id');
                         alert('You have been signed out successfully.');

@@ -1,4 +1,13 @@
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
+from ..database import StoredProcedures
+from ..schemas import user as user_schema
+from ..core import security
+from ..core.dependencies import require_owner_access
 from backend.app.core.logging_config import get_logger, log_exception
+import logging
+import pyodbc
+from datetime import timedelta
 
 auth_logger = get_logger('auth')
 security_logger = get_logger('security')
@@ -11,14 +20,6 @@ def log_auth_error(msg, exc=None):
         log_exception(auth_logger, msg, exc)
     else:
         auth_logger.error(msg)
-from fastapi import APIRouter, HTTPException, status
-from typing import List
-from ..database import StoredProcedures
-from ..schemas import user as user_schema
-from ..core import security
-import logging
-import pyodbc
-from datetime import timedelta
 
 router = APIRouter(
     prefix="/auth",
@@ -155,6 +156,110 @@ def me(request: Request):
         'role': decoded.get('role'),
         'session_id': decoded.get('sid')
     }
+
+@router.get('/owner-analytics')
+def get_owner_analytics(current_user: dict = Depends(require_owner_access)):
+    """
+    Get comprehensive analytics for the owner dashboard.
+    Returns KPIs: total properties, active tenants, monthly revenue, occupancy rate, etc.
+    """
+    owner_id = current_user['user_id']
+    
+    try:
+        # Get all properties for owner
+        properties = StoredProcedures.execute_sp("sp_GetAllProperties", [owner_id]) or []
+        total_properties = len(properties)
+        
+        # Count available and occupied properties
+        available_properties = sum(1 for p in properties if p.get('status', '').lower() in ['available', 'vacant'])
+        occupied_properties = sum(1 for p in properties if p.get('status', '').lower() in ['occupied', 'rented'])
+        
+        # Calculate occupancy rate
+        occupancy_rate = (occupied_properties / total_properties * 100) if total_properties > 0 else 0
+        
+        # Get active tenants (leases)
+        try:
+            from ..database import get_db_connection
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Count active tenants
+            cursor.execute("""
+                SELECT COUNT(DISTINCT tenant_id) 
+                FROM leases 
+                WHERE property_id IN (
+                    SELECT id FROM properties WHERE owner_id = ?
+                ) AND is_active = 1
+            """, (owner_id,))
+            active_tenants = cursor.fetchone()[0] or 0
+            
+            # Calculate monthly revenue (sum of rent from active leases)
+            cursor.execute("""
+                SELECT COALESCE(SUM(rent_amount), 0) 
+                FROM leases 
+                WHERE property_id IN (
+                    SELECT id FROM properties WHERE owner_id = ?
+                ) AND is_active = 1
+            """, (owner_id,))
+            monthly_revenue = float(cursor.fetchone()[0] or 0)
+            
+            # Get pending payments
+            cursor.execute("""
+                SELECT COALESCE(SUM(amount), 0)
+                FROM payments p
+                JOIN leases l ON p.lease_id = l.id
+                WHERE l.property_id IN (
+                    SELECT id FROM properties WHERE owner_id = ?
+                ) AND p.payment_status IN ('pending', 'failed')
+            """, (owner_id,))
+            pending_amount = float(cursor.fetchone()[0] or 0)
+            
+            # Calculate collection rate (completed payments / total expected)
+            cursor.execute("""
+                SELECT 
+                    COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount ELSE 0 END), 0) as collected,
+                    COALESCE(SUM(amount), 0) as total
+                FROM payments p
+                JOIN leases l ON p.lease_id = l.id
+                WHERE l.property_id IN (
+                    SELECT id FROM properties WHERE owner_id = ?
+                ) AND MONTH(p.payment_date) = MONTH(GETDATE())
+                  AND YEAR(p.payment_date) = YEAR(GETDATE())
+            """, (owner_id,))
+            row = cursor.fetchone()
+            collected = float(row[0] or 0)
+            total = float(row[1] or 0)
+            collection_rate = (collected / total * 100) if total > 0 else 0
+            
+            cursor.close()
+            conn.close()
+            
+        except Exception as e:
+            print(f"Error fetching tenant/payment stats: {e}")
+            active_tenants = 0
+            monthly_revenue = 0
+            pending_amount = 0
+            collection_rate = 0
+        
+        return {
+            "totalProperties": total_properties,
+            "availableProperties": available_properties,
+            "occupiedProperties": occupied_properties,
+            "occupancyRate": round(occupancy_rate, 1),
+            "activeTenants": active_tenants,
+            "monthlyRevenue": round(monthly_revenue, 2),
+            "pendingAmount": round(pending_amount, 2),
+            "collectionRate": round(collection_rate, 1)
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch owner analytics: {str(e)}",
+            headers={"X-Error-Code": "ANALYTICS_ERROR"}
+        )
+
 
 @router.post('/logout')
 def logout(request: Request):

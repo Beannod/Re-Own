@@ -62,6 +62,7 @@ from .routers import public as public_router
 from .routers import leases as leases_router
 from .routers import invoices as invoices_router
 from .routers import maintenance as maintenance_router
+from .routers import logs as logs_router
 from .routers import reports as reports_router
 
 # Configure logging first
@@ -367,6 +368,7 @@ api_router.include_router(leases_router.router)
 api_router.include_router(invoices_router.router)
 api_router.include_router(maintenance_router.router)
 api_router.include_router(reports_router.router)
+api_router.include_router(logs_router.router)
 
 
 # Register click logger router at root (not under /api)

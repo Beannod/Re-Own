@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .console {
+            margin-top: 20px;
+            background: #222;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Login</h1>
+        <input type="email" id="email" placeholder="Email" value="owner2@example.com">
+        <input type="password" id="password" placeholder="Password" value="test">
+        <button onclick="testLogin()">Login</button>
+        <div class="console" id="console"></div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        const consoleEl = document.getElementById('console');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function logToUI(msg, level = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = level === 'error' ? '[ERROR]' : level === 'warn' ? '[WARN]' : '[LOG]';
+            const text = `${timestamp} ${prefix} ${msg}`;
+            consoleEl.textContent += text + '\n';
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog(...args);
+            logToUI(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' '), 'log');
+        };
+
+        console.error = function(...args) {
+            originalError(...args);
+            logToUI(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' '), 'error');
+        };
+
+        console.warn = function(...args) {
+            originalWarn(...args);
+            logToUI(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' '), 'warn');
+        };
+
+        async function testLogin() {
+            console.log('=== Test Login Start ===');
+            console.log('Email:', document.getElementById('email').value);
+            console.log('Password:', document.getElementById('password').value);
+            
+            try {
+                const credentials = {
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                };
+                console.log('Calling API.login...');
+                const response = await API.login(credentials);
+                console.log('API Response:', response);
+                
+                const token = response.access_token;
+                console.log('Token extracted:', token ? token.substring(0, 50) + '...' : 'null');
+                
+                const decoded = Util.decodeJWT(token);
+                console.log('Decoded token:', decoded);
+                
+                const role = decoded && decoded.role ? decoded.role : null;
+                console.log('Role:', role);
+                
+                console.log('Would redirect to:', role === 'owner' ? 'owner.html' : 'renter.html');
+            } catch (error) {
+                console.error('Login error:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    status: error.status,
+                    errorCode: error.errorCode,
+                    body: error.body
+                });
+            }
+        }
+
+        console.log('Test page loaded');
+    </script>
+</body>
+</html>

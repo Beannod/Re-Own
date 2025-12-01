@@ -148,7 +148,20 @@ class API {
     }
 
     // Properties
-    static async getProperties() {
+    static async getProperties(options = {}) {
+        // Attempt lightweight summary endpoint unless full detail explicitly requested
+        if (!options.full) {
+            try {
+                const summary = await this.request('/properties/summary');
+                // Normalize to array of property-like objects for existing callers
+                if (summary && Array.isArray(summary.items)) {
+                    return summary.items;
+                }
+            } catch (e) {
+                // Fallback silently to full list
+                console.warn('Summary properties fetch failed, falling back to full list:', e.message);
+            }
+        }
         return await this.request(ENDPOINTS.PROPERTIES.LIST);
     }
 
@@ -235,6 +248,14 @@ class API {
     // Renter-specific methods
     static async getCurrentLease() {
         return await this.request('/leases/current');
+    }
+
+    static async getUtilitiesByTenant(tenantId) {
+        return await this.request(`/utilities?tenant_id=${tenantId}`);
+    }
+
+    static async getPaymentsByTenant(tenantId) {
+        return await this.request(`/payments?tenant_id=${tenantId}`);
     }
 
     static async downloadLeaseAgreement(leaseId) {

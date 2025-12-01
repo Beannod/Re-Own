@@ -8,77 +8,30 @@ REM - Restarts the app
 set ROOT=%~dp0
 cd /d "%ROOT%"
 
-REM Initialize database
-echo Initializing database...
-python backend/scripts/apply_sql.py backend/database/init_database.sql
-if errorlevel 1 (
-    echo Failed to initialize database
-    pause
-    exit /b 1
+REM Set up database using merged complete database script
+echo Setting up database...
+REM Apply every .sql file found under backend\database in alphabetical order
+echo Applying all .sql files under backend\database...
+set FILECOUNT=0
+for /f "delims=" %%F in ('dir /b /on "backend\database\*.sql"') do (
+    set /a FILECOUNT+=1
+    echo.
+    echo === Applying backend\database\%%F ===
+    python backend/scripts/apply_sql.py "backend/database/%%F"
+    if errorlevel 1 (
+        echo Failed applying backend\database\%%F
+        pause
+        exit /b 1
+    )
 )
-
-REM Set up database schema
-echo Creating database schema...
-python backend/scripts/apply_sql.py backend/database/complete_database.sql
-if errorlevel 1 (
-    echo Failed to create database
-    pause
-    exit /b 1
-)
-
-echo Setting up reference tables...
-python backend/scripts/apply_sql.py backend/database/reference_tables.sql
-if errorlevel 1 (
-    echo Failed to create reference tables
-    pause
-    exit /b 1
-)
-
-echo Creating reference procedures...
-python backend/scripts/apply_sql.py backend/database/reference_procedures.sql
-if errorlevel 1 (
-    echo Failed to create reference procedures
+if "%FILECOUNT%"=="0" (
+    echo No .sql files found under backend\database
     pause
     exit /b 1
 )
 
 REM Wait a moment to ensure all connections are closed
 timeout /t 2 > nul
-
-REM Apply SQL files in specific order
-echo Applying payment procedures...
-python backend/scripts/apply_sql.py backend/database/payment_procedures.sql
-if errorlevel 1 (
-    echo Note: Payment procedures may already exist in complete_database.sql, continuing...
-)
-
-echo Applying payment report procedures...
-python backend/scripts/apply_sql.py backend/database/payment_report_procedure.sql
-if errorlevel 1 (
-    echo Note: Payment report procedures may already exist in complete_database.sql, continuing...
-)
-
-echo Applying occupancy report...
-python backend/scripts/apply_sql.py backend/database/occupancy_report.sql
-if errorlevel 1 (
-    echo Note: Occupancy report procedures may already exist in complete_database.sql, continuing...
-)
-
-echo Applying payment data updates...
-python backend/scripts/apply_sql.py backend/database/update_payment_data.sql
-if errorlevel 1 (
-    echo Note: Payment data updates failed, you may need to check for duplicate entries
-    pause
-    exit /b 1
-)
-
-echo Fixing property status values...
-python backend/scripts/apply_sql.py backend/database/fix_property_status.sql
-if errorlevel 1 (
-    echo Note: Failed to fix property status values
-    pause
-    exit /b 1
-)
 
 echo Resetting all user passwords to their email addresses...
 python backend/scripts/reset_all_passwords_to_email.py

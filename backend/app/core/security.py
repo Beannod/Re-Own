@@ -121,14 +121,19 @@ def verify_token(token: str):
         logger.info(f"Verifying token: {token}")
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         logger.info(f"Token decoded successfully: {decoded}")
-        # Session check (sid claim) against DB with optional bypass and in-memory fallback
         sid = decoded.get('sid')
+
+        # When bypassing DB session checks (dev hot-reload), still enforce in-memory revocation
         if BYPASS_DB_SESSION:
-            logger.warning("BYPASS_DB_SESSION enabled: skipping DB session check")
+            if not SessionManager.is_active(sid):
+                logger.warning("BYPASS_DB_SESSION active but session revoked or missing in memory")
+                raise HTTPException(status_code=401, detail="Session expired or logged out", headers={"X-Error-Code": "SESSION_EXPIRED"})
+            logger.warning("BYPASS_DB_SESSION enabled: skipping DB persistence check; using in-memory session state")
             return decoded
+
+        # Normal path: verify against DB, fallback to memory if DB unreachable
         db_active = _db_session_is_active(sid)
         if not db_active:
-            # Fallback to in-memory session for dev resiliency
             if not SessionManager.is_active(sid):
                 logger.warning("Session is not active (DB) and not active in memory")
                 raise HTTPException(status_code=401, detail="Session expired or logged out", headers={"X-Error-Code": "SESSION_EXPIRED"})

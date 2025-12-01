@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test with Diagnostics</title>
+    <style>
+        body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #0066cc; }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 14px; }
+        button { background: #0066cc; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        .log { background: #222; color: #0f0; padding: 10px; font-family: monospace; max-height: 300px; overflow-y: auto; border-radius: 4px; }
+        .error { color: #f33; }
+        .success { color: #3f3; }
+        .info { color: #3cf; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login Diagnostic Test</h1>
+        
+        <div class="section">
+            <h3>Step 1: Backend Connectivity</h3>
+            <button onclick="testBackend()">Test Backend Connection</button>
+            <div id="backend-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 2: Login</h3>
+            <input type="email" id="email" placeholder="Email" value="owner2@example.com">
+            <input type="password" id="password" placeholder="Password" value="test">
+            <button onclick="testLogin()">Test Login</button>
+            <div id="login-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 3: Stored Data</h3>
+            <button onclick="showStorage()">Show Stored Data</button>
+            <div id="storage-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Step 4: Load Page</h3>
+            <button onclick="testPageLoad()">Load Owner.html</button>
+            <div id="page-log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/error-logger.js"></script>
+
+    <script>
+        function log(elemId, msg, type = 'info') {
+            const elem = document.getElementById(elemId);
+            const time = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[OK]' : '[INFO]';
+            const html = `<div class="${type}">${time} ${prefix} ${msg}</div>`;
+            elem.innerHTML += html;
+            elem.scrollTop = elem.scrollHeight;
+        }
+
+        async function testBackend() {
+            const elem = 'backend-log';
+            document.getElementById(elem).innerHTML = '';
+            
+            log(elem, 'Testing backend at ' + CONFIG.API_BASE_URL, 'info');
+            
+            try {
+                const response = await fetch(CONFIG.API_BASE_URL + '/api/public/summary');
+                log(elem, 'Backend response: ' + response.status, response.ok ? 'success' : 'error');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(elem, 'Total properties: ' + data.stats.total_properties, 'success');
+                }
+            } catch (err) {
+                log(elem, 'Backend error: ' + err.message, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const elem = 'login-log';
+            document.getElementById(elem).innerHTML = '';
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            log(elem, 'Logging in as ' + email, 'info');
+            
+            try {
+                const response = await API.login({ email, password });
+                log(elem, 'Login response received', 'success');
+                
+                const token = response.access_token;
+                log(elem, 'Token: ' + token.substring(0, 50) + '...', 'info');
+                
+                const decoded = Util.decodeJWT(token);
+                log(elem, 'Decoded token', 'success');
+                log(elem, 'Role: ' + (decoded.role || 'NONE'), 'info');
+                log(elem, 'User ID: ' + (decoded.user_id || 'NONE'), 'info');
+                
+                // Store token
+                localStorage.setItem(CONFIG.TOKEN_KEY, token);
+                log(elem, 'Token stored in localStorage', 'success');
+                
+            } catch (err) {
+                log(elem, 'Login error: ' + err.message, 'error');
+                if (err.body) {
+                    log(elem, 'Response: ' + JSON.stringify(err.body), 'error');
+                }
+            }
+        }
+
+        function showStorage() {
+            const elem = 'storage-log';
+            document.getElementById(elem).innerHTML = '';
+            
+            const token = localStorage.getItem(CONFIG.TOKEN_KEY);
+            log(elem, 'Token stored: ' + (token ? 'YES' : 'NO'), token ? 'success' : 'error');
+            
+            if (token) {
+                const decoded = Util.decodeJWT(token);
+                log(elem, 'Decoded: ' + JSON.stringify(decoded), 'info');
+            }
+            
+            const errors = ErrorLogger.getStoredErrors();
+            log(elem, 'Errors logged: ' + errors.length, 'info');
+            errors.slice(-3).forEach(err => {
+                log(elem, '[' + err.level + '] ' + err.title, 'info');
+            });
+        }
+
+        async function testPageLoad() {
+            const elem = 'page-log';
+            document.getElementById(elem).innerHTML = '';
+            
+            log(elem, 'Fetching owner.html', 'info');
+            
+            try {
+                const response = await fetch('/owner.html');
+                log(elem, 'Response: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const html = await response.text();
+                    log(elem, 'HTML size: ' + html.length + ' bytes', 'success');
+                    log(elem, 'Contains error-logger.js: ' + (html.includes('error-logger.js') ? 'YES' : 'NO'), 'info');
+                    log(elem, 'Ready to load page', 'success');
+                    
+                    // Actually load it
+                    log(elem, 'Loading page now...', 'info');
+                    document.open();
+                    document.write(html);
+                    document.close();
+                }
+            } catch (err) {
+                log(elem, 'Page load error: ' + err.message, 'error');
+            }
+        }
+
+        log('backend-log', 'Loaded', 'success');
+    </script>
+</body>
+</html>

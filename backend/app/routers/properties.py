@@ -11,7 +11,7 @@ def log_property_error(msg, exc=None):
     else:
         api_logger.error(msg)
 import os
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request, Depends
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Request, Depends, Query
 from typing import List, Optional
 from ..database import StoredProcedures
 from ..schemas import property as property_schema
@@ -23,11 +23,69 @@ router = APIRouter(
     tags=["Properties"]
 )
 
-@router.get("/", response_model=List[property_schema.Property])
-def list_properties(current_user: dict = Depends(require_owner_access)):
+@router.get("/", response_model=List[property_schema.PropertySummary])
+def list_properties(
+    summary: bool = True,
+    current_user: dict = Depends(require_owner_access)
+):
+    """Get properties for authenticated owner. Use summary=false for full details."""
     # Return only properties owned by the authenticated user
     result = StoredProcedures.execute_sp("sp_GetAllProperties", [current_user['user_id']])
-    return result or []
+    properties = result or []
+    
+    # Return lightweight summary by default for better performance
+    if summary and properties:
+        return [
+            {
+                "id": p.get("id"),
+                "title": p.get("title"),
+                "address": p.get("address"),
+                "city": p.get("city"),
+                "state": p.get("state"),
+                "status": p.get("status"),
+                "monthly_rent": p.get("monthly_rent") or p.get("rent_amount") or 0.0,
+                "rent_amount": p.get("rent_amount") or p.get("monthly_rent") or 0.0,
+                "property_type": p.get("property_type"),
+                "bedrooms": p.get("bedrooms") or 0,
+                "bathrooms": p.get("bathrooms") or 0.0,
+                "area": p.get("area") or 0.0,
+                "owner_id": p.get("owner_id"),
+                "created_at": p.get("created_at"),
+                "updated_at": p.get("updated_at"),
+            }
+            for p in properties
+        ]
+    
+    return properties
+
+@router.get("/summary")
+def list_properties_summary(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    current_user: dict = Depends(require_owner_access)
+):
+    """Lightweight paged property list for performance-sensitive views.
+    Returns only essential fields and omits large text / unused numeric columns.
+    """
+    rows = StoredProcedures.execute_sp("sp_GetAllProperties", [current_user['user_id']]) or []
+    total = len(rows)
+    start = (page - 1) * page_size
+    end = start + page_size
+    slice_rows = rows[start:end]
+    essentials = []
+    for r in slice_rows:
+        essentials.append({
+            "id": r.get("id"),
+            "title": r.get("title"),
+            "address": r.get("address"),
+            "city": r.get("city"),
+            "state": r.get("state"),
+            "status": r.get("status"),
+            "monthly_rent": r.get("monthly_rent") or r.get("rent_amount"),
+            "property_type": r.get("property_type"),
+            "updated_at": r.get("updated_at"),
+        })
+    return {"page": page, "page_size": page_size, "total": total, "items": essentials}
 
 @router.post("/", response_model=property_schema.Property)
 def create_property(property_data: property_schema.PropertyCreate, current_user: dict = Depends(require_owner_access)):
