@@ -31,6 +31,64 @@ class Util {
     }
 }
 
+// Global dark mode toggle with backend persistence when authenticated
+async function toggleDarkMode() {
+    try {
+        const isDark = !document.body.classList.contains('dark-mode');
+        document.body.classList.toggle('dark-mode', isDark);
+        try {
+            localStorage.setItem('darkMode', JSON.stringify(isDark));
+        } catch(_) {}
+        // Reflect UI toggle states
+        document.querySelectorAll('#darkModeToggle').forEach(el => { try { el.checked = isDark; } catch(_){} });
+
+        // Persist preference to backend if logged in
+        try {
+            const token = localStorage.getItem(CONFIG.TOKEN_KEY);
+            if (token && typeof API !== 'undefined') {
+                await API.request('/auth/user-preferences', {
+                    method: 'PUT',
+                    body: JSON.stringify({ dark_mode: isDark })
+                });
+            }
+        } catch (e) {
+            console.warn('Backend dark mode update failed (non-blocking):', e);
+        }
+        return isDark;
+    } catch (e) {
+        console.error('toggleDarkMode failed:', e);
+        return document.body.classList.contains('dark-mode');
+    }
+}
+
+// Apply saved dark mode on load
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        let isDark = false;
+        // Prefer backend preference if logged in
+        const token = localStorage.getItem(CONFIG.TOKEN_KEY);
+        if (token && typeof API !== 'undefined') {
+            try {
+                const prefs = await API.request('/auth/user-preferences');
+                if (typeof prefs.dark_mode === 'boolean') {
+                    isDark = !!prefs.dark_mode;
+                }
+            } catch (e) {
+                // Fallback to local
+                const local = localStorage.getItem('darkMode');
+                if (local !== null) isDark = JSON.parse(local);
+            }
+        } else {
+            const local = localStorage.getItem('darkMode');
+            if (local !== null) isDark = JSON.parse(local);
+        }
+        document.body.classList.toggle('dark-mode', !!isDark);
+        document.querySelectorAll('#darkModeToggle').forEach(el => { try { el.checked = !!isDark; } catch(_){} });
+    } catch (e) {
+        console.warn('Failed to apply saved dark mode:', e);
+    }
+});
+
 // Clear browser localStorage and sessionStorage
 function clearBrowserStorage() {
     localStorage.clear();

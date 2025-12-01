@@ -111,8 +111,7 @@ class Properties {
         const val = (field) => prop && prop[field] !== undefined && prop[field] !== null ? prop[field] : '';
         const escape = (str) => String(str).replace(/"/g, '&quot;');
         const selected = (field, value) => prop && String(prop[field]) === String(value) ? 'selected' : '';
-        
-        return `<div style="text-align: left; font-family: Arial, sans-serif; font-size: 0.85rem;">See full form code in properties.js</div>`;
+        return document.getElementById('swal-form-container') ? document.getElementById('swal-form-container').innerHTML : '';
     }
 
     // Helper method to extract form data  
@@ -225,14 +224,7 @@ class Properties {
                       <div class="col-4">
                           <label for="swal-type" style="font-weight: 600; font-size: 0.8rem;">Property Type</label>
                           <select id="swal-type" class="form-select form-select-sm" style="border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem; padding: 4px 8px;">
-                              <option value="Flat" selected>Flat</option>
-                              <option value="House">House</option>
-                              <option value="Commercial">Commercial</option>
-                              <option value="Land">Land</option>
-                              <option value="Room">Room</option>
-                              <option value="Apartment">Apartment</option>
-                              <option value="Studio">Studio</option>
-                              <option value="Villa">Villa</option>
+                              <option value="" selected>Loading types...</option>
                           </select>
                       </div>
                       <div class="col-2">
@@ -417,6 +409,63 @@ class Properties {
             cancelButtonText: 'Cancel',
             customClass: {
                 popup: 'compact-property-modal'
+            },
+            didOpen: () => {
+                // Populate property types dynamically from backend
+                (async () => {
+                    try {
+                        const types = await API.getPropertyTypes();
+                        const sel = document.getElementById('swal-type');
+                        if (sel) {
+                            sel.innerHTML = types.map(t => `<option value="${t.type_name}">${t.type_name}</option>`).join('');
+                            // Default select first or keep existing
+                            if (!sel.value && types.length) sel.value = types[0].type_name;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to load property types; falling back to defaults');
+                        const sel = document.getElementById('swal-type');
+                        if (sel) sel.innerHTML = ['Apartment','House','Flat','Commercial','Land','Room','Studio','Villa'].map(n=>`<option value="${n}">${n}</option>`).join('');
+                    }
+                })();
+                // Pre-populate all fields with sensible defaults (modifiable)
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+                const setSel = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+                set('swal-title', 'New Property');
+                set('swal-property-code', 'PROP-' + Math.floor(1000 + Math.random()*9000));
+                set('swal-address', '');
+                set('swal-street', '');
+                set('swal-city', '');
+                set('swal-state', '');
+                set('swal-zip', '');
+                setSel('swal-type', 'Flat');
+                setSel('swal-bed', '1');
+                setSel('swal-bath', '1');
+                set('swal-area', '600');
+                set('swal-floor-number', '1');
+                set('swal-total-floors', '2');
+                setSel('swal-status', 'Available');
+                set('swal-age', '1');
+                setSel('swal-furnishing', 'Unfurnished');
+                set('swal-parking', 'Yes');
+                set('swal-balcony', 'Yes');
+                setSel('swal-facing', 'North');
+                set('swal-desc', '');
+                set('swal-rent', '1000');
+                set('swal-deposit', '1000');
+                set('swal-electricity', '0.12');
+                set('swal-internet-rate', '50');
+                set('swal-water', '30');
+                set('swal-maintenance', '25');
+                set('swal-gas', '20');
+                setSel('swal-elevator', 'false');
+                setSel('swal-gym', 'false');
+                setSel('swal-garden', 'false');
+                set('swal-security', '');
+                set('swal-internet-provider', '');
+                set('swal-owner-name', '');
+                set('swal-owner-contact', '');
+                try { document.getElementById('swal-listing-date').valueAsDate = new Date(); } catch(_){}
+                set('swal-lease-terms', 'Minimum 12 months, 2 months notice');
             },
             preConfirm: () => {
                 const v = (id) => {

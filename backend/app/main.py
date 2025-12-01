@@ -64,6 +64,7 @@ from .routers import invoices as invoices_router
 from .routers import maintenance as maintenance_router
 from .routers import logs as logs_router
 from .routers import reports as reports_router
+from .routers import lookups as lookups_router
 
 # Configure logging first
 # Create logs directory if it doesn't exist
@@ -369,6 +370,7 @@ api_router.include_router(invoices_router.router)
 api_router.include_router(maintenance_router.router)
 api_router.include_router(reports_router.router)
 api_router.include_router(logs_router.router)
+api_router.include_router(lookups_router.router)
 
 
 # Register click logger router at root (not under /api)

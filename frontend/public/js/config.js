@@ -17,6 +17,9 @@ const ENDPOINTS = {
         UPDATE: '/properties/:id',
         DELETE: '/properties/:id',
     },
+    LOOKUPS: {
+        PROPERTY_TYPES: '/lookups/property-types'
+    },
     TENANTS: {
         LIST: '/tenants',
         CREATE: '/tenants',

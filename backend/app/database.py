@@ -12,7 +12,7 @@ import traceback
 
 # SQL Server connection parameters (configurable via environment variables)
 SERVER = os.getenv("DB_SERVER", ".\\\\SQLEXPRESS")
-DATABASE = os.getenv("DB_NAME", "property_manager_db")
+DATABASE = os.getenv("DB_NAME", "Re-own")
 DRIVER = os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server")
 PORT = os.getenv("DB_PORT")
 

@@ -165,6 +165,10 @@ class API {
         return await this.request(ENDPOINTS.PROPERTIES.LIST);
     }
 
+    static async getPropertyTypes() {
+        return await this.request(ENDPOINTS.LOOKUPS.PROPERTY_TYPES);
+    }
+
     static async createProperty(propertyData) {
         return await this.request(ENDPOINTS.PROPERTIES.CREATE, {
             method: 'POST',
